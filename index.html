@@ -9,9 +9,21 @@
 *{box-sizing:border-box}
 :root{--primary:#1769aa;--primary2:#0d47a1;--bg:#f3f6f9;--card:#fff;--text:#1f2937;--muted:#667085;--border:#d9e0e7;--ok:#16803c;--warn:#a15c00}
 body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,sans-serif}
-header{background:linear-gradient(135deg,var(--primary2),var(--primary));color:#fff;padding:22px 18px;text-align:center}
-header h1{margin:0 0 5px;font-size:26px}
-header p{margin:0;opacity:.9;font-size:14px}
+header{position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 125%,#b66bb4 0%,#7e287e 40%,#42134f 100%);color:#fff;padding:20px 18px 16px;text-align:center}
+.brand-logo{position:relative;display:inline-block;min-width:250px;padding:5px 18px 15px}
+.brand-title{position:relative;z-index:1;display:flex;justify-content:center;align-items:flex-end;margin:0;font-family:Impact,"Arial Black",sans-serif;font-size:clamp(42px,11vw,68px);font-weight:900;line-height:.9;letter-spacing:-2px;text-transform:uppercase;color:#eaa4e7;text-shadow:0 2px 0 #7d2679,0 5px 12px rgba(27,3,37,.55)}
+.brand-title span{display:inline-block;transform-origin:center bottom}
+.brand-title span:nth-child(1){transform:rotate(-12deg) translateY(9px)}
+.brand-title span:nth-child(2){transform:rotate(-7deg) translateY(3px)}
+.brand-title span:nth-child(3){transform:rotate(-2deg)}
+.brand-title span:nth-child(4){transform:translateY(-2px)}
+.brand-title span:nth-child(5){transform:rotate(2deg)}
+.brand-title span:nth-child(6){transform:rotate(7deg) translateY(3px)}
+.brand-title span:nth-child(7){transform:rotate(12deg) translateY(9px)}
+.brand-leaves{position:absolute;z-index:0;left:50%;bottom:-21px;width:126px;height:46px;transform:translateX(-50%)}
+.brand-leaves:before,.brand-leaves:after{content:"";position:absolute;bottom:0;width:73px;height:42px;background:linear-gradient(135deg,#b768b4,#6f226f);border:2px solid rgba(238,187,234,.55);border-radius:75% 20% 75% 20%;box-shadow:inset 8px -8px 0 rgba(76,17,84,.32),0 3px 10px rgba(31,3,40,.28)}
+.brand-leaves:before{left:4px;transform:rotate(18deg)}
+.brand-leaves:after{right:4px;transform:scaleX(-1) rotate(18deg)}
 .container{max-width:720px;margin:auto;padding:16px}
 .card{background:var(--card);border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:0 3px 12px rgba(0,0,0,.08)}
 h2{font-size:19px;margin:0 0 12px}
@@ -49,21 +61,17 @@ details summary{cursor:pointer;font-weight:bold}
 </head>
 <body>
 <header>
-<h1>🧪 MORACOL</h1>
-<p>Medidor de pH aproximado para conservas caseras</p>
+<div class="brand-logo" aria-label="Moracol">
+<div class="brand-leaves" aria-hidden="true"></div>
+<h1 class="brand-title"><span>M</span><span>O</span><span>R</span><span>A</span><span>C</span><span>O</span><span>L</span></h1>
+</div>
 </header>
 
 <main class="container">
 <section class="card">
 <h2>1. Preparar la medición</h2>
 <label for="conserva">Tipo de conserva</label>
-<select id="conserva">
-<option>Dulce de batata</option>
-<option>Jalea de durazno</option>
-<option>Dulce de membrillo</option>
-<option>Mermelada</option>
-<option>Otra conserva</option>
-</select>
+<input id="conserva" type="text" value="Dulce de batata" placeholder="Escribe el tipo de conserva">
 <p class="note">Coloca una pequeña muestra de la conserva preparada con el reactivo dentro del área indicada. Intenta usar iluminación uniforme y evita reflejos.</p>
 </section>
 
@@ -84,9 +92,7 @@ details summary{cursor:pointer;font-weight:bold}
 <h2>Resultado</h2>
 <div id="ph" class="ph">—</div>
 <div class="grid">
-<div class="metric"><small>RGB detectado</small><strong id="rgb">—</strong></div>
-<div class="metric"><small>Referencia más cercana</small><strong id="reference">—</strong></div>
-<div class="metric"><small>Distancia de color</small><strong id="distance">—</strong></div>
+<div class="metric"><small>Calidad de la captura</small><strong id="confidence">—</strong></div>
 <div class="metric"><small>Conserva</small><strong id="resultConserva">—</strong></div>
 </div>
 <p class="note"><strong>Importante:</strong> este resultado es una estimación basada en la tabla de calibración cargada. La iluminación, cámara, recipiente y reactivo pueden modificar el color. Para decisiones de seguridad alimentaria, se debe confirmar con un método de pH calibrado.</p>
@@ -127,9 +133,7 @@ const canvas=document.getElementById('canvas');
 const statusEl=document.getElementById('status');
 const resultEl=document.getElementById('result');
 const phEl=document.getElementById('ph');
-const rgbEl=document.getElementById('rgb');
-const refEl=document.getElementById('reference');
-const distanceEl=document.getElementById('distance');
+const confidenceEl=document.getElementById('confidence');
 const conservaEl=document.getElementById('resultConserva');
 const conservaSelect=document.getElementById('conserva');
 let stream=null;
@@ -174,17 +178,13 @@ async function startCamera(){
   }
 }
 
-function distance(a,b){
-  return Math.sqrt((a[0]-b[0])**2+(a[1]-b[1])**2+(a[2]-b[2])**2);
-}
-
 function median(values){
   values.sort((a,b)=>a-b);
   const m=Math.floor(values.length/2);
   return values.length%2?values[m]:Math.round((values[m-1]+values[m])/2);
 }
 
-function representativeRGB(imageData){
+function representativeColor(imageData){
   const pixels=[];
   for(let i=0;i<imageData.data.length;i+=4){
     const r=imageData.data[i],g=imageData.data[i+1],b=imageData.data[i+2];
@@ -203,17 +203,96 @@ function representativeRGB(imageData){
   ];
 }
 
+// Convierte el color capturado a HSV. H identifica el tono; S y V ayudan a
+// detectar muestras demasiado apagadas, oscuras o con reflejos.
+function rgbToHSV([r,g,b]){
+  r/=255; g/=255; b/=255;
+  const max=Math.max(r,g,b), min=Math.min(r,g,b), d=max-min;
+  let h=0;
+  if(d){
+    if(max===r) h=60*(((g-b)/d+6)%6);
+    else if(max===g) h=60*((b-r)/d+2);
+    else h=60*((r-g)/d+4);
+  }
+  return {h, s:max===0?0:(d/max)*100, v:max*100};
+}
+
+// Convierte sRGB a CIE Lab (iluminante D65). En Lab, una distancia Delta E
+// se aproxima mejor a la diferencia que percibe el ojo humano.
+function rgbToLab([r,g,b]){
+  const linear=[r,g,b].map(value=>{
+    value/=255;
+    return value<=0.04045 ? value/12.92 : ((value+0.055)/1.055)**2.4;
+  });
+  const x=(linear[0]*0.4124+linear[1]*0.3576+linear[2]*0.1805)/0.95047;
+  const y=(linear[0]*0.2126+linear[1]*0.7152+linear[2]*0.0722);
+  const z=(linear[0]*0.0193+linear[1]*0.1192+linear[2]*0.9505)/1.08883;
+  const f=value=>value>0.008856 ? Math.cbrt(value) : 7.787*value+16/116;
+  const fx=f(x), fy=f(y), fz=f(z);
+  return {l:116*fy-16, a:500*(fx-fy), b:200*(fy-fz)};
+}
+
+function deltaE(a,b){
+  return Math.hypot(a.l-b.l,a.a-b.a,a.b-b.b);
+}
+
+function hueDifference(a,b){
+  const d=Math.abs(a-b)%360;
+  return Math.min(d,360-d);
+}
+
+function interpolateLab(a,b,t){
+  return {
+    l:a.l+(b.l-a.l)*t,
+    a:a.a+(b.a-a.a)*t,
+    b:a.b+(b.b-a.b)*t
+  };
+}
+
+function interpolateHue(a,b,t){
+  const change=((b-a+540)%360)-180;
+  return (a+change*t+360)%360;
+}
+
 function estimatePH(rgb){
-  let bestPH=null,bestDistance=Infinity,bestRGB=null;
-  for(const [ph,ref] of Object.entries(colorTable)){
-    const d=distance(rgb,ref);
-    if(d<bestDistance){
-      bestDistance=d;
-      bestPH=parseFloat(ph);
-      bestRGB=ref;
+  const lab=rgbToLab(rgb);
+  const hsv=rgbToHSV(rgb);
+  const references=Object.entries(colorTable)
+    .map(([ph,ref])=>({ph:Number(ph),rgb:ref,lab:rgbToLab(ref),hsv:rgbToHSV(ref)}))
+    .sort((a,b)=>a.ph-b.ph);
+  let best=null;
+
+  // Busca el tramo de calibración cuya línea Lab queda más cerca del color
+  // observado y calcula su posición entre los dos pH conocidos.
+  for(let i=0;i<references.length-1;i++){
+    const first=references[i], second=references[i+1];
+    const vector={l:second.lab.l-first.lab.l,a:second.lab.a-first.lab.a,b:second.lab.b-first.lab.b};
+    const fromFirst={l:lab.l-first.lab.l,a:lab.a-first.lab.a,b:lab.b-first.lab.b};
+    const lengthSquared=vector.l**2+vector.a**2+vector.b**2;
+    const t=Math.max(0,Math.min(1,(fromFirst.l*vector.l+fromFirst.a*vector.a+fromFirst.b*vector.b)/lengthSquared));
+    const projectedLab=interpolateLab(first.lab,second.lab,t);
+    const expectedHue=interpolateHue(first.hsv.h,second.hsv.h,t);
+    const labDistance=deltaE(lab,projectedLab);
+    const hDistance=hueDifference(hsv.h,expectedHue);
+    // Lab es la comparación principal; HSV controla que el tono acompañe.
+    const score=labDistance+hDistance*0.25*Math.min(hsv.s,first.hsv.s,second.hsv.s)/100;
+    if(!best || score<best.score){
+      best={
+        ph:first.ph+(second.ph-first.ph)*t,
+        score,
+        labDistance,
+        hDistance,
+        reference:t<0.5?first.rgb:second.rgb
+      };
     }
   }
-  return {ph:bestPH,distance:bestDistance,reference:bestRGB};
+
+  const labDistance=best.labDistance;
+  const hDistance=best.hDistance;
+  let confidence='Aceptable';
+  if(hsv.s<20 || hsv.v<20 || hsv.v>95 || labDistance>35) confidence='Baja — repite la foto';
+  else if(labDistance>20) confidence='Media';
+  return {ph:best.ph,lab,hsv,distance:labDistance,hueDistance:hDistance,reference:best.reference,confidence};
 }
 
 function captureMeasurement(){
@@ -233,22 +312,23 @@ function captureMeasurement(){
   const y=Math.floor((canvas.height-size)/2);
 
   const imageData=ctx.getImageData(x,y,size,size);
-  const rgb=representativeRGB(imageData);
+  const rgb=representativeColor(imageData);
   const result=estimatePH(rgb);
 
   pendingMeasurement={
     conserva:conservaSelect.value,
     ph:result.ph,
-    rgb,
+    hsv:result.hsv,
+    lab:result.lab,
     reference:result.reference,
     distance:result.distance,
+    hueDistance:result.hueDistance,
+    confidence:result.confidence,
     timestamp:new Date().toISOString()
   };
 
   phEl.textContent=result.ph.toFixed(1);
-  rgbEl.textContent=`(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
-  refEl.textContent=`pH ${result.ph.toFixed(1)} — (${result.reference.join(', ')})`;
-  distanceEl.textContent=result.distance.toFixed(1);
+  confidenceEl.textContent=result.confidence;
   conservaEl.textContent=conservaSelect.value;
   resultEl.style.display='block';
   resultEl.scrollIntoView({behavior:'smooth',block:'center'});
@@ -277,7 +357,7 @@ function renderHistory(){
   box.innerHTML=history.map(item=>`
     <div class="history-item">
       <div class="history-title">${escapeHTML(item.conserva)} — pH ${Number(item.ph).toFixed(1)}</div>
-      <div class="history-meta">RGB(${item.rgb.join(', ')}) · Distancia ${Number(item.distance).toFixed(1)} · ${formatDate(item.timestamp)}</div>
+      <div class="history-meta">${item.lab ? `Lab(${item.lab.l.toFixed(1)}, ${item.lab.a.toFixed(1)}, ${item.lab.b.toFixed(1)}) · ΔE ${Number(item.distance).toFixed(1)} · ${escapeHTML(item.confidence||'Sin evaluar')}` : `RGB(${item.rgb.join(', ')}) · Distancia ${Number(item.distance).toFixed(1)}`} · ${formatDate(item.timestamp)}</div>
     </div>
   `).join('');
 }
