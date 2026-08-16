@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1769aa">
+<title>Moracol — Medidor de pH para Conservas</title>
+<style>
+*{box-sizing:border-box}
+:root{--primary:#1769aa;--primary2:#0d47a1;--bg:#f3f6f9;--card:#fff;--text:#1f2937;--muted:#667085;--border:#d9e0e7;--ok:#16803c;--warn:#a15c00}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,sans-serif}
+header{background:linear-gradient(135deg,var(--primary2),var(--primary));color:#fff;padding:22px 18px;text-align:center}
+header h1{margin:0 0 5px;font-size:26px}
+header p{margin:0;opacity:.9;font-size:14px}
+.container{max-width:720px;margin:auto;padding:16px}
+.card{background:var(--card);border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:0 3px 12px rgba(0,0,0,.08)}
+h2{font-size:19px;margin:0 0 12px}
+label{display:block;font-weight:bold;font-size:14px;margin:10px 0 6px}
+select,input{width:100%;padding:12px;border:1px solid var(--border);border-radius:9px;font-size:15px;background:#fff}
+.camera{position:relative;width:100%;overflow:hidden;border-radius:13px;background:#000}
+video{display:block;width:100%;aspect-ratio:4/3;object-fit:cover}
+.guide{position:absolute;left:50%;top:50%;width:44%;aspect-ratio:1;transform:translate(-50%,-50%);border:3px solid #fff;border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.25);pointer-events:none}
+.guide:after{content:"Coloca la muestra aquí";position:absolute;left:50%;bottom:-31px;transform:translateX(-50%);white-space:nowrap;color:#fff;font-size:12px;text-shadow:0 1px 4px #000}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+button{border:0;border-radius:9px;padding:12px 16px;font-size:15px;font-weight:bold;cursor:pointer;background:var(--primary);color:#fff;flex:1;min-width:145px}
+button.secondary{background:#5b6470}
+button.danger{background:#a83232}
+button:disabled{opacity:.5;cursor:not-allowed}
+.status{font-size:13px;color:var(--muted);margin:10px 0 0;text-align:center;min-height:18px}
+.result{display:none;text-align:center;border:2px solid #dcecff}
+.ph{font-size:52px;font-weight:bold;color:var(--primary);margin:5px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.metric{background:#f7f9fb;border:1px solid #e7ebef;border-radius:9px;padding:10px}
+.metric small{display:block;color:var(--muted);margin-bottom:4px}
+.metric strong{font-size:16px}
+.note{font-size:12px;color:var(--muted);line-height:1.45;margin:12px 0 0}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:9px;border-bottom:1px solid #eee}
+th{background:#f7f9fb}
+.history-item{padding:12px 0;border-bottom:1px solid #eee}
+.history-item:last-child{border-bottom:0}
+.history-title{font-weight:bold}
+.history-meta{font-size:12px;color:var(--muted);margin-top:4px}
+.empty{text-align:center;color:var(--muted);font-size:14px}
+details summary{cursor:pointer;font-weight:bold}
+.calib-info{background:#f7fbff;border:1px solid #d9eaff;padding:12px;border-radius:9px;font-size:13px;line-height:1.45}
+@media(max-width:480px){.grid{grid-template-columns:1fr}.container{padding:10px}.card{padding:14px}}
+</style>
+</head>
+<body>
+<header>
+<h1>🧪 MORACOL</h1>
+<p>Medidor de pH aproximado para conservas caseras</p>
+</header>
+
+<main class="container">
+<section class="card">
+<h2>1. Preparar la medición</h2>
+<label for="conserva">Tipo de conserva</label>
+<select id="conserva">
+<option>Dulce de batata</option>
+<option>Jalea de durazno</option>
+<option>Dulce de membrillo</option>
+<option>Mermelada</option>
+<option>Otra conserva</option>
+</select>
+<p class="note">Coloca una pequeña muestra de la conserva preparada con el reactivo dentro del área indicada. Intenta usar iluminación uniforme y evita reflejos.</p>
+</section>
+
+<section class="card">
+<h2>2. Capturar la muestra</h2>
+<div class="camera">
+<video id="video" autoplay playsinline></video>
+<div class="guide"></div>
+</div>
+<div class="controls">
+<button id="capture">📷 Medir pH</button>
+<button id="switch" class="secondary">🔄 Cambiar cámara</button>
+</div>
+<p id="status" class="status">Solicitando acceso a la cámara…</p>
+</section>
+
+<section id="result" class="card result">
+<h2>Resultado</h2>
+<div id="ph" class="ph">—</div>
+<div class="grid">
+<div class="metric"><small>RGB detectado</small><strong id="rgb">—</strong></div>
+<div class="metric"><small>Referencia más cercana</small><strong id="reference">—</strong></div>
+<div class="metric"><small>Distancia de color</small><strong id="distance">—</strong></div>
+<div class="metric"><small>Conserva</small><strong id="resultConserva">—</strong></div>
+</div>
+<p class="note"><strong>Importante:</strong> este resultado es una estimación basada en la tabla de calibración cargada. La iluminación, cámara, recipiente y reactivo pueden modificar el color. Para decisiones de seguridad alimentaria, se debe confirmar con un método de pH calibrado.</p>
+<div class="controls">
+<button id="save">💾 Guardar medición</button>
+</div>
+</section>
+
+<section class="card">
+<details>
+<summary>📊 Tabla de calibración utilizada</summary>
+<div class="calib-info" style="margin-top:10px">
+La tabla que ya estaba dentro del código se conserva como la tabla de calibración del sistema. No se modifica ni se reemplaza.
+</div>
+<div style="overflow-x:auto;margin-top:10px">
+<table>
+<thead><tr><th>pH</th><th>R</th><th>G</th><th>B</th></tr></thead>
+<tbody id="calib-body"></tbody>
+</table>
+</div>
+</details>
+</section>
+
+<section class="card">
+<h2>📋 Historial de mediciones</h2>
+<div class="controls">
+<button id="clearHistory" class="danger">🗑️ Borrar historial</button>
+</div>
+<div id="history"></div>
+</section>
+</main>
+
+<canvas id="canvas" hidden></canvas>
+
+<script>
+const video=document.getElementById('video');
+const canvas=document.getElementById('canvas');
+const statusEl=document.getElementById('status');
+const resultEl=document.getElementById('result');
+const phEl=document.getElementById('ph');
+const rgbEl=document.getElementById('rgb');
+const refEl=document.getElementById('reference');
+const distanceEl=document.getElementById('distance');
+const conservaEl=document.getElementById('resultConserva');
+const conservaSelect=document.getElementById('conserva');
+let stream=null;
+let facingMode='environment';
+let pendingMeasurement=null;
+
+/*
+ * TABLA DE CALIBRACIÓN ORIGINAL DEL CÓDIGO ENTREGADO.
+ * Se conserva exactamente con sus cinco puntos.
+ */
+const colorTable={
+  3.0:[255,153,0],
+  4.0:[255,204,0],
+  4.5:[204,255,51],
+  5.0:[102,255,102],
+  6.0:[51,204,204]
+};
+
+function populateCalibration(){
+  const body=document.getElementById('calib-body');
+  body.innerHTML=Object.entries(colorTable).map(([ph,rgb])=>
+    `<tr><td>${ph}</td><td>${rgb[0]}</td><td>${rgb[1]}</td><td>${rgb[2]}</td></tr>`
+  ).join('');
+}
+
+async function startCamera(){
+  if(stream) stream.getTracks().forEach(t=>t.stop());
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({
+      video:{
+        facingMode:{ideal:facingMode},
+        width:{ideal:1280},
+        height:{ideal:720}
+      },
+      audio:false
+    });
+    video.srcObject=stream;
+    statusEl.textContent='Cámara lista. Coloca la muestra en el recuadro.';
+  }catch(error){
+    console.error(error);
+    statusEl.textContent='No se pudo acceder a la cámara. Permite el acceso y asegúrate de usar HTTPS.';
+  }
+}
+
+function distance(a,b){
+  return Math.sqrt((a[0]-b[0])**2+(a[1]-b[1])**2+(a[2]-b[2])**2);
+}
+
+function median(values){
+  values.sort((a,b)=>a-b);
+  const m=Math.floor(values.length/2);
+  return values.length%2?values[m]:Math.round((values[m-1]+values[m])/2);
+}
+
+function representativeRGB(imageData){
+  const pixels=[];
+  for(let i=0;i<imageData.data.length;i+=4){
+    const r=imageData.data[i],g=imageData.data[i+1],b=imageData.data[i+2];
+    const brightness=(r+g+b)/3;
+    // Elimina extremos para reducir el efecto de sombras/reflejos.
+    if(brightness>=35 && brightness<=245) pixels.push([r,g,b]);
+  }
+  if(!pixels.length){
+    for(let i=0;i<imageData.data.length;i+=4)
+      pixels.push([imageData.data[i],imageData.data[i+1],imageData.data[i+2]]);
+  }
+  return [
+    median(pixels.map(p=>p[0])),
+    median(pixels.map(p=>p[1])),
+    median(pixels.map(p=>p[2]))
+  ];
+}
+
+function estimatePH(rgb){
+  let bestPH=null,bestDistance=Infinity,bestRGB=null;
+  for(const [ph,ref] of Object.entries(colorTable)){
+    const d=distance(rgb,ref);
+    if(d<bestDistance){
+      bestDistance=d;
+      bestPH=parseFloat(ph);
+      bestRGB=ref;
+    }
+  }
+  return {ph:bestPH,distance:bestDistance,reference:bestRGB};
+}
+
+function captureMeasurement(){
+  if(!video.videoWidth){
+    alert('La cámara todavía no está lista.');
+    return;
+  }
+
+  canvas.width=video.videoWidth;
+  canvas.height=video.videoHeight;
+  const ctx=canvas.getContext('2d',{willReadFrequently:true});
+  ctx.drawImage(video,0,0,canvas.width,canvas.height);
+
+  // Área central correspondiente al recuadro.
+  const size=Math.floor(Math.min(canvas.width,canvas.height)*0.44);
+  const x=Math.floor((canvas.width-size)/2);
+  const y=Math.floor((canvas.height-size)/2);
+
+  const imageData=ctx.getImageData(x,y,size,size);
+  const rgb=representativeRGB(imageData);
+  const result=estimatePH(rgb);
+
+  pendingMeasurement={
+    conserva:conservaSelect.value,
+    ph:result.ph,
+    rgb,
+    reference:result.reference,
+    distance:result.distance,
+    timestamp:new Date().toISOString()
+  };
+
+  phEl.textContent=result.ph.toFixed(1);
+  rgbEl.textContent=`(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+  refEl.textContent=`pH ${result.ph.toFixed(1)} — (${result.reference.join(', ')})`;
+  distanceEl.textContent=result.distance.toFixed(1);
+  conservaEl.textContent=conservaSelect.value;
+  resultEl.style.display='block';
+  resultEl.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+function saveMeasurement(){
+  if(!pendingMeasurement)return;
+  const history=JSON.parse(localStorage.getItem('moracol_history')||'[]');
+  history.unshift(pendingMeasurement);
+  localStorage.setItem('moracol_history',JSON.stringify(history));
+  renderHistory();
+  statusEl.textContent='Medición guardada correctamente.';
+}
+
+function formatDate(iso){
+  return new Date(iso).toLocaleString('es-AR');
+}
+
+function renderHistory(){
+  const box=document.getElementById('history');
+  const history=JSON.parse(localStorage.getItem('moracol_history')||'[]');
+  if(!history.length){
+    box.innerHTML='<p class="empty">No hay mediciones guardadas.</p>';
+    return;
+  }
+  box.innerHTML=history.map(item=>`
+    <div class="history-item">
+      <div class="history-title">${escapeHTML(item.conserva)} — pH ${Number(item.ph).toFixed(1)}</div>
+      <div class="history-meta">RGB(${item.rgb.join(', ')}) · Distancia ${Number(item.distance).toFixed(1)} · ${formatDate(item.timestamp)}</div>
+    </div>
+  `).join('');
+}
+
+function escapeHTML(value){
+  return String(value).replace(/[&<>"']/g,c=>({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+  }[c]));
+}
+
+document.getElementById('capture').addEventListener('click',captureMeasurement);
+document.getElementById('save').addEventListener('click',saveMeasurement);
+document.getElementById('switch').addEventListener('click',()=>{
+  facingMode=facingMode==='environment'?'user':'environment';
+  startCamera();
+});
+document.getElementById('clearHistory').addEventListener('click',()=>{
+  if(confirm('¿Seguro que quieres borrar todo el historial?')){
+    localStorage.removeItem('moracol_history');
+    renderHistory();
+  }
+});
+
+populateCalibration();
+renderHistory();
+startCamera();
+</script>
+</body>
+</html>
+
