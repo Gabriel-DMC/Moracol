@@ -7,28 +7,18 @@
 <title>Moracol — Medidor de pH para Conservas</title>
 <style>
 *{box-sizing:border-box}
-:root{--primary:#1769aa;--primary2:#0d47a1;--bg:#f3f6f9;--card:#fff;--text:#1f2937;--muted:#667085;--border:#d9e0e7;--ok:#16803c;--warn:#a15c00}
+:root{--primary:#7e287e;--primary2:#541a59;--bg:#f8f5f9;--card:#fff;--text:#28202c;--muted:#716777;--border:#e4dce6;--soft:#f7f3f8;--soft-blue:#f8f2fa;--header-bg:rgba(255,255,255,.96);--input-bg:#fff;--ok:#16803c;--warn:#9a5a09}
+html[data-theme="dark"]{color-scheme:dark;--primary:#c679c0;--primary2:#e0a8dc;--bg:#171218;--card:#241d26;--text:#f6edf6;--muted:#c6b7c8;--border:#443747;--soft:#302733;--soft-blue:#302435;--header-bg:rgba(31,24,33,.97);--input-bg:#2c2530;--ok:#68d391;--warn:#f4c56c}
 body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,sans-serif}
-header{position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 125%,#b66bb4 0%,#7e287e 40%,#42134f 100%);color:#fff;padding:20px 18px 16px;text-align:center}
-.brand-logo{position:relative;display:inline-block;min-width:250px;padding:5px 18px 15px}
-.brand-title{position:relative;z-index:1;display:flex;justify-content:center;align-items:flex-end;margin:0;font-family:Impact,"Arial Black",sans-serif;font-size:clamp(42px,11vw,68px);font-weight:900;line-height:.9;letter-spacing:-2px;text-transform:uppercase;color:#eaa4e7;text-shadow:0 2px 0 #7d2679,0 5px 12px rgba(27,3,37,.55)}
-.brand-title span{display:inline-block;transform-origin:center bottom}
-.brand-title span:nth-child(1){transform:rotate(-12deg) translateY(9px)}
-.brand-title span:nth-child(2){transform:rotate(-7deg) translateY(3px)}
-.brand-title span:nth-child(3){transform:rotate(-2deg)}
-.brand-title span:nth-child(4){transform:translateY(-2px)}
-.brand-title span:nth-child(5){transform:rotate(2deg)}
-.brand-title span:nth-child(6){transform:rotate(7deg) translateY(3px)}
-.brand-title span:nth-child(7){transform:rotate(12deg) translateY(9px)}
-.brand-leaves{position:absolute;z-index:0;left:50%;bottom:-21px;width:126px;height:46px;transform:translateX(-50%)}
-.brand-leaves:before,.brand-leaves:after{content:"";position:absolute;bottom:0;width:73px;height:42px;background:linear-gradient(135deg,#b768b4,#6f226f);border:2px solid rgba(238,187,234,.55);border-radius:75% 20% 75% 20%;box-shadow:inset 8px -8px 0 rgba(76,17,84,.32),0 3px 10px rgba(31,3,40,.28)}
-.brand-leaves:before{left:4px;transform:rotate(18deg)}
-.brand-leaves:after{right:4px;transform:scaleX(-1) rotate(18deg)}
+body.welcome-open{overflow:hidden}
+header{position:relative;background:var(--header-bg);border-bottom:1px solid var(--border);box-shadow:0 2px 12px rgba(70,29,75,.06);padding:12px 18px;color:var(--text)}
+.header-inner{max-width:720px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.brand-logo{display:flex;align-items:center;gap:10px;flex-shrink:0}.brand-mark{position:relative;display:grid;place-items:center;width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,#a64aa1,#5c1b63);color:#fff;box-shadow:0 5px 13px rgba(92,27,99,.25);font-family:Georgia,serif;font-size:25px;font-weight:bold;font-style:italic}.brand-mark:after{content:"";position:absolute;right:5px;top:5px;width:9px;height:6px;border-radius:100% 0 100% 0;background:#dbaed8;transform:rotate(-25deg)}.brand-copy{line-height:1}.brand-title{margin:0;color:#4e1754;font-size:21px;letter-spacing:1.4px;font-weight:800}.brand-tagline{margin:4px 0 0;color:#88718d;font-size:10px;letter-spacing:.7px;text-transform:uppercase}
 .container{max-width:720px;margin:auto;padding:16px}
 .card{background:var(--card);border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:0 3px 12px rgba(0,0,0,.08)}
 h2{font-size:19px;margin:0 0 12px}
 label{display:block;font-weight:bold;font-size:14px;margin:10px 0 6px}
-select,input{width:100%;padding:12px;border:1px solid var(--border);border-radius:9px;font-size:15px;background:#fff}
+select,input{width:100%;padding:12px;border:1px solid var(--border);border-radius:9px;font-size:15px;background:var(--input-bg);color:var(--text)}
 .camera{position:relative;width:100%;overflow:hidden;border-radius:13px;background:#000}
 video{display:block;width:100%;aspect-ratio:4/3;object-fit:cover}
 .guide{position:absolute;left:50%;top:50%;width:44%;aspect-ratio:1;transform:translate(-50%,-50%);border:3px solid #fff;border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.25);pointer-events:none}
@@ -42,53 +32,132 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .result{display:none;text-align:center;border:2px solid #dcecff}
 .ph{font-size:52px;font-weight:bold;color:var(--primary);margin:5px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
-.metric{background:#f7f9fb;border:1px solid #e7ebef;border-radius:9px;padding:10px}
+.metric{background:var(--soft);border:1px solid var(--border);border-radius:9px;padding:10px}
 .metric small{display:block;color:var(--muted);margin-bottom:4px}
 .metric strong{font-size:16px}
 .note{font-size:12px;color:var(--muted);line-height:1.45;margin:12px 0 0}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th,td{text-align:left;padding:9px;border-bottom:1px solid #eee}
-th{background:#f7f9fb}
+th{background:var(--soft)}
 .history-item{padding:12px 0;border-bottom:1px solid #eee}
 .history-item:last-child{border-bottom:0}
 .history-title{font-weight:bold}
 .history-meta{font-size:12px;color:var(--muted);margin-top:4px}
 .empty{text-align:center;color:var(--muted);font-size:14px}
 details summary{cursor:pointer;font-weight:bold}
-.calib-info{background:#f7fbff;border:1px solid #d9eaff;padding:12px;border-radius:9px;font-size:13px;line-height:1.45}
+.calib-info{background:var(--soft-blue);border:1px solid var(--border);padding:12px;border-radius:9px;font-size:13px;line-height:1.45}
+.nav{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:0;padding:0}
+.nav button{min-width:0;padding:11px 8px;font-size:13px;color:var(--muted);background:var(--card);border:1px solid var(--border);box-shadow:0 2px 8px rgba(31,41,55,.05)}.nav button.active{background:#42134f;color:#fff;border-color:#42134f;box-shadow:0 5px 13px rgba(66,19,79,.25)}
+.app-view{display:none}.app-view.view-active:not(.result){display:block}.app-view:not(.view-active){display:none!important}
+.account-card{border:1px solid var(--border);background:linear-gradient(135deg,var(--card),var(--soft-blue))}
+.account-summary{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.account-name{font-size:17px;font-weight:bold}.account-detail{font-size:13px;color:var(--muted);margin-top:4px}
+.pill{display:inline-block;border-radius:999px;padding:5px 9px;background:var(--soft);color:var(--muted);font-size:12px;font-weight:bold}.pill.active{background:#dcfce7;color:#166534}.pill.warning{background:#fef3c7;color:#92400e}
+.auth-form{display:none;margin-top:14px;padding-top:4px;border-top:1px solid #dce6f1}.auth-form.show{display:block}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.plan{border:1px solid var(--border);border-radius:12px;padding:13px;display:flex;flex-direction:column}.plan.featured{border:2px solid #7e287e;box-shadow:0 5px 15px rgba(126,40,126,.13)}.plan h3{margin:0;font-size:16px}.price{font-size:23px;font-weight:bold;margin:10px 0 3px;color:#42134f}.period{font-size:12px;color:var(--muted);margin-bottom:9px}.plan ul{padding-left:18px;margin:5px 0 14px;font-size:12px;line-height:1.5;flex:1}.plan button{min-width:0;padding:10px 7px;font-size:13px}
+.notice{background:var(--soft-blue);border:1px solid var(--border);color:var(--text);border-radius:9px;padding:10px 12px;font-size:12px;line-height:1.45}
+.theme-setting{margin-top:16px;padding-top:15px;border-top:1px solid var(--border)}.theme-setting h2{margin-bottom:4px}.theme-setting .note{margin-top:0}.theme-setting select{margin-top:9px}
+#welcomeScreen{position:fixed;z-index:1000;inset:0;display:grid;place-items:center;overflow:hidden;background:#100b10;transition:opacity .55s ease,visibility .55s ease}
+#welcomeScreen.hidden{opacity:0;visibility:hidden;pointer-events:none}
+.welcome-bg{position:absolute;inset:-12px;background-position:center;background-size:cover;filter:brightness(.58) saturate(1.04);transform:scale(1.04);transition:opacity 1.35s ease,transform 15s ease;opacity:0}.welcome-bg.active{opacity:1;transform:scale(1.1)}
+.welcome-shade{position:absolute;inset:0;background:radial-gradient(circle at center,rgba(17,6,15,.16),rgba(7,3,8,.63))}
+.welcome-panel{position:relative;z-index:1;width:min(430px,calc(100% - 34px));padding:34px 28px 27px;border:1px solid rgba(255,255,255,.26);border-radius:24px;background:rgba(8,6,9,.78);box-shadow:0 20px 60px rgba(0,0,0,.52);text-align:center;color:#fff;backdrop-filter:blur(10px)}
+.welcome-panel h1{margin:0;font-family:Impact,"Arial Black",sans-serif;font-size:48px;letter-spacing:1px;color:#f2b2ed;text-shadow:0 3px 12px rgba(0,0,0,.45)}.welcome-panel p{margin:7px 0 25px;color:rgba(255,255,255,.82);font-size:14px;line-height:1.45}
+.welcome-actions{display:grid;gap:10px}.welcome-actions button{min-width:0;width:100%;padding:13px 14px;box-shadow:none}.welcome-actions .create{background:#000;border:1px solid rgba(255,255,255,.38)}.welcome-actions .login{background:#7e287e}.welcome-actions .guest{background:transparent;border:1px solid rgba(255,255,255,.48)}.welcome-actions .google{background:rgba(255,255,255,.9);color:#202124}.welcome-pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}.welcome-note{display:block;margin-top:18px;font-size:11px;color:rgba(255,255,255,.63)}
 @media(max-width:480px){.grid{grid-template-columns:1fr}.container{padding:10px}.card{padding:14px}}
+@media(max-width:560px){.plans{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.header-inner{flex-direction:column;align-items:stretch;gap:12px}.brand-logo{align-self:center}.nav{width:100%}}
+@media(prefers-reduced-motion:reduce){.welcome-bg,#welcomeScreen{transition:none}.welcome-bg.active{transform:scale(1.04)}}
 </style>
 </head>
-<body>
+<body class="welcome-open">
+<section id="welcomeScreen" aria-label="Bienvenida a Moracol">
+  <div id="welcomeBgA" class="welcome-bg active"></div><div id="welcomeBgB" class="welcome-bg"></div><div class="welcome-shade"></div>
+  <div class="welcome-panel">
+    <h1>MORACOL</h1>
+    <p>Medí, guardá y compartí tus conservas caseras.</p>
+    <div class="welcome-actions">
+      <button id="welcomeCreate" class="create">Crear cuenta</button>
+      <div class="welcome-pair"><button id="welcomeLogin" class="login">Iniciar sesión</button><button id="welcomeGuest" class="guest">Invitado</button></div>
+      <button id="welcomeGoogle" class="google">G&nbsp;&nbsp; Iniciar con Google</button>
+    </div>
+    <small class="welcome-note">Proyecto escolar desarrollado en Junior Achievement.</small>
+  </div>
+</section>
 <header>
-<div class="brand-logo" aria-label="Moracol">
-<div class="brand-leaves" aria-hidden="true"></div>
-<h1 class="brand-title"><span>M</span><span>O</span><span>R</span><span>A</span><span>C</span><span>O</span><span>L</span></h1>
+<div class="header-inner">
+  <div class="brand-logo" aria-label="Moracol">
+    <div class="brand-mark" aria-hidden="true">M</div>
+    <div class="brand-copy"><h1 class="brand-title">MORACOL</h1><p class="brand-tagline">Conservas con precisión</p></div>
+  </div>
+  <nav class="nav" aria-label="Navegación principal">
+    <button class="active" data-view="measure">Medir pH</button><button data-view="plans">Planes</button><button data-view="account">Mi cuenta</button>
+  </nav>
 </div>
 </header>
 
 <main class="container">
-<section class="card">
-<h2>1. Preparar la medición</h2>
+<section id="mi-cuenta" class="card account-card app-view account-view">
+  <div class="account-summary">
+    <div><div id="accountName" class="account-name">Crea tu cuenta para comenzar</div><div id="accountDetail" class="account-detail">Tu historial se guardará vinculado a tu cuenta.</div></div>
+    <span id="accountPill" class="pill">Sin cuenta</span>
+  </div>
+  <div class="controls" id="accountActions"><button id="showAuth">Crear cuenta o ingresar</button></div>
+  <div id="authForm" class="auth-form">
+    <h2>Tu cuenta Moracol</h2>
+    <div class="form-grid">
+      <div class="full"><label for="authName">Nombre o apodo</label><input id="authName" maxlength="40" placeholder="Ej.: Dulces de Ana"></div>
+      <div class="full"><label for="authEmail">Correo electrónico</label><input id="authEmail" type="email" placeholder="tu@email.com"></div>
+      <div class="full"><label for="authPassword">Contraseña</label><input id="authPassword" type="password" minlength="6" placeholder="Mínimo 6 caracteres"></div>
+    </div>
+    <div class="controls"><button id="registerButton">Crear cuenta</button><button id="loginButton" class="secondary">Ingresar</button></div>
+    <button id="googleButton" class="secondary" style="width:100%;margin-top:8px">G Continuar con Google</button>
+    <p class="note">En esta maqueta, las cuentas se guardan solo en este navegador. La versión publicada conectará estas opciones con Firebase para que funcionen de verdad entre dispositivos.</p>
+  </div>
+  <div class="theme-setting">
+    <h2>Apariencia</h2>
+    <p class="note">Predeterminado usa el tema claro u oscuro configurado en tu dispositivo.</p>
+    <label for="themePreference">Tema de la página</label>
+    <select id="themePreference">
+      <option value="system">Predeterminado</option>
+      <option value="light">Claro</option>
+      <option value="dark">Oscuro</option>
+    </select>
+  </div>
+</section>
+
+<section id="planes" class="card app-view plans-view">
+  <h2>Elegí tu plan</h2>
+  <p class="note">La cuenta gratuita incluye 1 medición. Podés cancelar cuando quieras: conservás el acceso ilimitado hasta el final del período ya abonado y no se realizan reembolsos por períodos iniciados.</p>
+  <div class="plans" style="margin-top:14px">
+    <article class="plan"><h3>Plus</h3><div class="price">$2.000</div><div class="period">ARS · por semana</div><ul><li>Mediciones ilimitadas</li><li>Historial en la nube</li><li>Acceso por 7 días</li></ul><button data-plan="plus">Elegir Plus</button></article>
+    <article class="plan featured"><h3>Pro</h3><div class="price">$6.000</div><div class="period">ARS · por mes</div><ul><li>Mediciones ilimitadas</li><li>Historial en la nube</li><li>Acceso por 1 mes</li></ul><button data-plan="pro">Elegir Pro</button></article>
+    <article class="plan"><h3>Anual</h3><div class="price">$60.000</div><div class="period">ARS · por año</div><ul><li>Mediciones ilimitadas</li><li>Historial en la nube</li><li>Acceso por 1 año</li></ul><button data-plan="annual">Elegir Anual</button></article>
+  </div>
+  <div id="paymentMessage" class="notice" style="display:none;margin-top:13px"></div>
+</section>
+
+<section id="medir" class="card app-view measure-view">
+  <div class="account-summary"><h2 style="margin:0">1. Preparar la medición</h2><span id="measurementAllowance" class="pill warning">Iniciá sesión</span></div>
 <label for="conserva">Tipo de conserva</label>
 <input id="conserva" type="text" value="Dulce de batata" placeholder="Escribe el tipo de conserva">
 <p class="note">Coloca una pequeña muestra de la conserva preparada con el reactivo dentro del área indicada. Intenta usar iluminación uniforme y evita reflejos.</p>
 </section>
 
-<section class="card">
+<section class="card app-view measure-view">
 <h2>2. Capturar la muestra</h2>
 <div class="camera">
 <video id="video" autoplay playsinline></video>
 <div class="guide"></div>
 </div>
 <div class="controls">
-<button id="capture">📷 Medir pH</button>
-<button id="switch" class="secondary">🔄 Cambiar cámara</button>
+<button id="capture">Medir pH</button>
+<button id="switch" class="secondary">Cambiar cámara</button>
 </div>
 <p id="status" class="status">Solicitando acceso a la cámara…</p>
 </section>
 
-<section id="result" class="card result">
+<section id="result" class="card result app-view measure-view">
 <h2>Resultado</h2>
 <div id="ph" class="ph">—</div>
 <div class="grid">
@@ -97,13 +166,13 @@ details summary{cursor:pointer;font-weight:bold}
 </div>
 <p class="note"><strong>Importante:</strong> este resultado es una estimación basada en la tabla de calibración cargada. La iluminación, cámara, recipiente y reactivo pueden modificar el color. Para decisiones de seguridad alimentaria, se debe confirmar con un método de pH calibrado.</p>
 <div class="controls">
-<button id="save">💾 Guardar medición</button>
+<button id="save">Guardar medición</button>
 </div>
 </section>
 
-<section class="card">
+<section class="card app-view measure-view">
 <details>
-<summary>📊 Tabla de calibración utilizada</summary>
+<summary>Tabla de calibración utilizada</summary>
 <div class="calib-info" style="margin-top:10px">
 La tabla que ya estaba dentro del código se conserva como la tabla de calibración del sistema. No se modifica ni se reemplaza.
 </div>
@@ -116,13 +185,14 @@ La tabla que ya estaba dentro del código se conserva como la tabla de calibraci
 </details>
 </section>
 
-<section class="card">
-<h2>📋 Historial de mediciones</h2>
+<section class="card app-view account-view">
+<h2>Historial de mediciones</h2>
 <div class="controls">
-<button id="clearHistory" class="danger">🗑️ Borrar historial</button>
+<button id="clearHistory" class="danger">Borrar historial</button>
 </div>
 <div id="history"></div>
 </section>
+
 </main>
 
 <canvas id="canvas" hidden></canvas>
@@ -139,6 +209,166 @@ const conservaSelect=document.getElementById('conserva');
 let stream=null;
 let facingMode='environment';
 let pendingMeasurement=null;
+let currentUser=null;
+let selectedPlan=null;
+let guestMode=false;
+
+const plans={
+  plus:{name:'Plus',amount:2000,days:7,label:'1 semana'},
+  pro:{name:'Pro',amount:6000,days:30,label:'1 mes'},
+  annual:{name:'Anual',amount:60000,days:365,label:'1 año'}
+};
+
+const systemThemeQuery=window.matchMedia('(prefers-color-scheme: dark)');
+function getThemePreference(){return currentUser?.themePreference||localStorage.getItem('moracol_guest_theme')||'system';}
+function resolveTheme(preference){return preference==='system'?(systemThemeQuery.matches?'dark':'light'):preference;}
+function applyTheme(preference){document.documentElement.dataset.theme=resolveTheme(preference);}
+function updateThemeControl(){
+  const preference=getThemePreference();
+  document.getElementById('themePreference').value=preference;
+  applyTheme(preference);
+}
+function saveThemePreference(preference){
+  if(currentUser){currentUser.themePreference=preference;persistCurrentUser();}
+  else localStorage.setItem('moracol_guest_theme',preference);
+  applyTheme(preference);
+}
+
+function readJSON(key,fallback){
+  try{return JSON.parse(localStorage.getItem(key)||JSON.stringify(fallback));}
+  catch{return fallback;}
+}
+function writeJSON(key,value){localStorage.setItem(key,JSON.stringify(value));}
+function getUsers(){return readJSON('moracol_demo_users',[]);}
+function saveUsers(users){writeJSON('moracol_demo_users',users);}
+function loadSession(){
+  const id=localStorage.getItem('moracol_demo_session');
+  currentUser=getUsers().find(user=>user.id===id)||null;
+}
+function persistCurrentUser(){
+  if(!currentUser)return;
+  const users=getUsers();
+  const index=users.findIndex(user=>user.id===currentUser.id);
+  if(index>=0){users[index]=currentUser;saveUsers(users);}
+}
+function storageKey(type){return currentUser?`moracol_${type}_${currentUser.id}`:'moracol_history';}
+function activePlan(){
+  return currentUser?.subscription && new Date(currentUser.subscription.endsAt)>new Date()
+    ? currentUser.subscription : null;
+}
+function accessState(){
+  if(!currentUser)return {allowed:false,message:'Iniciá sesión para medir'};
+  const subscription=activePlan();
+  if(subscription)return {allowed:true,unlimited:true,message:`Plan ${subscription.planName} activo hasta ${formatDate(subscription.endsAt)}`};
+  if(!currentUser.freeMeasurementUsed && !currentUser.hasHadSubscription)return {allowed:true,free:true,message:'Te queda 1 medición gratuita'};
+  return {allowed:false,message:'No tenés mediciones disponibles. Elegí un plan para seguir midiendo.'};
+}
+function updateAccessUI(){
+  const allowance=document.getElementById('measurementAllowance');
+  const state=accessState();
+  allowance.textContent=state.message;
+  allowance.className=`pill ${state.unlimited?'active':'warning'}`;
+}
+function renderAccount(){
+  const name=document.getElementById('accountName');
+  const detail=document.getElementById('accountDetail');
+  const pill=document.getElementById('accountPill');
+  const actions=document.getElementById('accountActions');
+  const auth=document.getElementById('authForm');
+  if(!currentUser){
+    name.textContent=guestMode?'Estás navegando como invitado':'Crea tu cuenta para comenzar';
+    detail.textContent=guestMode?'Podés explorar Moracol. Creá una cuenta para medir y guardar tus resultados.':'Tu historial se guardará vinculado a tu cuenta.';
+    pill.textContent=guestMode?'Modo invitado':'Sin cuenta'; pill.className='pill';
+    actions.innerHTML='<button id="showAuth">Crear cuenta o ingresar</button>'; auth.classList.remove('show');
+  }else{
+    const subscription=activePlan();
+    name.textContent=`Hola, ${currentUser.name}`;
+    if(subscription){
+      detail.textContent=`Plan ${subscription.planName} · acceso ilimitado hasta ${formatDate(subscription.endsAt)}${subscription.cancelled?' · cancelado, sin próximos cobros':''}`;
+      pill.textContent=`Plan ${subscription.planName} activo`; pill.className='pill active';
+    }else if(currentUser.hasHadSubscription){
+      detail.textContent='Tu último plan terminó. Elegí un nuevo plan para volver a medir.';
+      pill.textContent='Sin plan activo'; pill.className='pill warning';
+    }else{
+      detail.textContent=currentUser.freeMeasurementUsed?'Ya usaste la medición gratuita.':'Tenés 1 medición gratuita disponible.';
+      pill.textContent='Cuenta gratuita'; pill.className='pill warning';
+    }
+    auth.classList.remove('show');
+    actions.innerHTML=`${subscription&&!subscription.cancelled?'<button id="cancelPlan" class="secondary">Cancelar plan</button>':''}<button id="signOut" class="danger">Cerrar sesión</button>`;
+  }
+  updateAccessUI();updateThemeControl();
+}
+function setView(view){
+  document.querySelectorAll('.app-view').forEach(section=>section.classList.toggle('view-active',section.classList.contains(`${view}-view`)));
+  document.querySelectorAll('.nav [data-view]').forEach(button=>button.classList.toggle('active',button.dataset.view===view));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function openAuth(){setView('account');document.getElementById('authForm').classList.add('show');document.getElementById('authName').focus();}
+function register(){
+  const name=document.getElementById('authName').value.trim();
+  const email=document.getElementById('authEmail').value.trim().toLowerCase();
+  const password=document.getElementById('authPassword').value;
+  if(!name||!email||password.length<6){alert('Completá un apodo, un correo válido y una contraseña de al menos 6 caracteres.');return;}
+  const users=getUsers();
+  if(users.some(user=>user.email===email)){alert('Ya existe una cuenta con este correo. Elegí Ingresar.');return;}
+  currentUser={id:crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random()}`,name,email,password,freeMeasurementUsed:false,hasHadSubscription:false,subscription:null,themePreference:'system'};
+  users.push(currentUser);saveUsers(users);localStorage.setItem('moracol_demo_session',currentUser.id);renderAccount();renderHistory();
+  alert('Cuenta creada. Tenés 1 medición gratuita para probar Moracol.');
+}
+function login(){
+  const email=document.getElementById('authEmail').value.trim().toLowerCase();
+  const password=document.getElementById('authPassword').value;
+  currentUser=getUsers().find(user=>user.email===email&&user.password===password)||null;
+  if(!currentUser){alert('Correo o contraseña incorrectos.');return;}
+  localStorage.setItem('moracol_demo_session',currentUser.id);renderAccount();renderHistory();
+}
+function signOut(){
+  localStorage.removeItem('moracol_demo_session');currentUser=null;guestMode=false;pendingMeasurement=null;resultEl.style.display='none';renderAccount();renderHistory();setView('measure');
+}
+function cancelPlan(){
+  const subscription=activePlan();
+  if(!subscription)return;
+  if(!confirm(`¿Cancelar ${subscription.planName}? Vas a conservar las mediciones ilimitadas hasta ${formatDate(subscription.endsAt)}. No se harán reembolsos.`))return;
+  currentUser.subscription.cancelled=true;persistCurrentUser();renderAccount();
+  alert('Plan cancelado. Tu acceso se mantiene hasta la fecha de vencimiento.');
+}
+function choosePlan(planId){
+  if(!currentUser){alert('Primero creá una cuenta o iniciá sesión para elegir un plan.');openAuth();return;}
+  selectedPlan=plans[planId];
+  const message=document.getElementById('paymentMessage');
+  message.style.display='block';
+  message.innerHTML=`Elegiste <strong>${selectedPlan.name}</strong>: $${selectedPlan.amount.toLocaleString('es-AR')} ARS por ${selectedPlan.label}. En la versión publicada, este botón abrirá Mercado Pago. <button id="demoPayment" style="margin:8px 0 0;min-width:auto;padding:8px 10px">Activar plan de prueba</button>`;
+  message.scrollIntoView({behavior:'smooth',block:'center'});
+}
+function activateDemoPlan(){
+  if(!currentUser||!selectedPlan)return;
+  const now=new Date();
+  const base=activePlan()?new Date(currentUser.subscription.endsAt):now;
+  base.setDate(base.getDate()+selectedPlan.days);
+  currentUser.subscription={planId:Object.keys(plans).find(key=>plans[key]===selectedPlan),planName:selectedPlan.name,endsAt:base.toISOString(),cancelled:false};
+  currentUser.hasHadSubscription=true;persistCurrentUser();document.getElementById('paymentMessage').innerHTML='<strong>Plan de prueba activado.</strong> En producción, este cambio ocurrirá solo cuando Mercado Pago confirme el pago.';renderAccount();
+}
+function googleDemo(){alert('El ingreso con Google se conectará al configurar Firebase Authentication. En esta maqueta usá correo y contraseña.');}
+
+const welcomeBackgrounds=Array.from({length:15},(_,index)=>`moracol-assets/fondo-conserva-${String(index+1).padStart(2,'0')}.jpg`);
+let activeWelcomeLayer=0;
+function startWelcomeSlideshow(){
+  const layers=[document.getElementById('welcomeBgA'),document.getElementById('welcomeBgB')];
+  let imageIndex=0;
+  layers[0].style.backgroundImage=`url("${welcomeBackgrounds[0]}")`;
+  const changeBackground=()=>{
+    imageIndex=(imageIndex+1)%welcomeBackgrounds.length;
+    const nextLayer=(activeWelcomeLayer+1)%2;
+    layers[nextLayer].style.backgroundImage=`url("${welcomeBackgrounds[imageIndex]}")`;
+    layers[nextLayer].classList.add('active');layers[activeWelcomeLayer].classList.remove('active');activeWelcomeLayer=nextLayer;
+  };
+  window.setInterval(changeBackground,15000);
+}
+function closeWelcome(){document.getElementById('welcomeScreen').classList.add('hidden');document.body.classList.remove('welcome-open');}
+function welcomeToAuth(){closeWelcome();window.setTimeout(openAuth,120);}
+function enterAsGuest(){
+  currentUser=null;guestMode=true;pendingMeasurement=null;closeWelcome();renderAccount();renderHistory();setView('measure');
+}
 
 /*
  * TABLA DE CALIBRACIÓN ORIGINAL DEL CÓDIGO ENTREGADO.
@@ -296,6 +526,12 @@ function estimatePH(rgb){
 }
 
 function captureMeasurement(){
+  const access=accessState();
+  if(!access.allowed){
+    alert(access.message);
+    setView('plans');
+    return;
+  }
   if(!video.videoWidth){
     alert('La cámara todavía no está lista.');
     return;
@@ -327,6 +563,12 @@ function captureMeasurement(){
     timestamp:new Date().toISOString()
   };
 
+  if(access.free){
+    currentUser.freeMeasurementUsed=true;
+    persistCurrentUser();
+    renderAccount();
+  }
+
   phEl.textContent=result.ph.toFixed(1);
   confidenceEl.textContent=result.confidence;
   conservaEl.textContent=conservaSelect.value;
@@ -336,9 +578,10 @@ function captureMeasurement(){
 
 function saveMeasurement(){
   if(!pendingMeasurement)return;
-  const history=JSON.parse(localStorage.getItem('moracol_history')||'[]');
+  if(!currentUser){alert('Iniciá sesión para guardar la medición.');return;}
+  const history=readJSON(storageKey('history'),[]);
   history.unshift(pendingMeasurement);
-  localStorage.setItem('moracol_history',JSON.stringify(history));
+  writeJSON(storageKey('history'),history);
   renderHistory();
   statusEl.textContent='Medición guardada correctamente.';
 }
@@ -349,7 +592,8 @@ function formatDate(iso){
 
 function renderHistory(){
   const box=document.getElementById('history');
-  const history=JSON.parse(localStorage.getItem('moracol_history')||'[]');
+  if(!currentUser){box.innerHTML='<p class="empty">Iniciá sesión para ver y guardar tu historial.</p>';return;}
+  const history=readJSON(storageKey('history'),[]);
   if(!history.length){
     box.innerHTML='<p class="empty">No hay mediciones guardadas.</p>';
     return;
@@ -375,16 +619,41 @@ document.getElementById('switch').addEventListener('click',()=>{
   startCamera();
 });
 document.getElementById('clearHistory').addEventListener('click',()=>{
+  if(!currentUser)return;
   if(confirm('¿Seguro que quieres borrar todo el historial?')){
-    localStorage.removeItem('moracol_history');
+    localStorage.removeItem(storageKey('history'));
     renderHistory();
   }
 });
+document.querySelectorAll('.nav [data-view]').forEach(button=>button.addEventListener('click',()=>setView(button.dataset.view)));
+document.getElementById('themePreference').addEventListener('change',event=>saveThemePreference(event.target.value));
+const refreshSystemTheme=()=>{if(getThemePreference()==='system')applyTheme('system');};
+if(systemThemeQuery.addEventListener)systemThemeQuery.addEventListener('change',refreshSystemTheme);
+else systemThemeQuery.addListener(refreshSystemTheme);
+document.getElementById('accountActions').addEventListener('click',event=>{
+  if(event.target.id==='showAuth')openAuth();
+  if(event.target.id==='signOut')signOut();
+  if(event.target.id==='cancelPlan')cancelPlan();
+});
+document.getElementById('registerButton').addEventListener('click',register);
+document.getElementById('loginButton').addEventListener('click',login);
+document.getElementById('googleButton').addEventListener('click',googleDemo);
+document.querySelectorAll('[data-plan]').forEach(button=>button.addEventListener('click',()=>choosePlan(button.dataset.plan)));
+document.getElementById('paymentMessage').addEventListener('click',event=>{if(event.target.id==='demoPayment')activateDemoPlan();});
+document.getElementById('welcomeCreate').addEventListener('click',welcomeToAuth);
+document.getElementById('welcomeLogin').addEventListener('click',welcomeToAuth);
+document.getElementById('welcomeGuest').addEventListener('click',enterAsGuest);
+document.getElementById('welcomeGoogle').addEventListener('click',()=>{closeWelcome();googleDemo();openAuth();});
 
+loadSession();
+startWelcomeSlideshow();
 populateCalibration();
+renderAccount();
 renderHistory();
+setView('measure');
 startCamera();
 </script>
 </body>
 </html>
+
 
