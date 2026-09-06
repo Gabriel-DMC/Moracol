@@ -3,31 +3,39 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#1769aa">
+<meta id="themeColor" name="theme-color" content="#7e287e">
 <title>Moracol — Medidor de pH para Conservas</title>
 <style>
 *{box-sizing:border-box}
-:root{--primary:#7e287e;--primary2:#541a59;--bg:#f8f5f9;--card:#fff;--text:#28202c;--muted:#716777;--border:#e4dce6;--soft:#f7f3f8;--soft-blue:#f8f2fa;--header-bg:rgba(255,255,255,.96);--input-bg:#fff;--ok:#16803c;--warn:#9a5a09}
-html[data-theme="dark"]{color-scheme:dark;--primary:#c679c0;--primary2:#e0a8dc;--bg:#171218;--card:#241d26;--text:#f6edf6;--muted:#c6b7c8;--border:#443747;--soft:#302733;--soft-blue:#302435;--header-bg:rgba(31,24,33,.97);--input-bg:#2c2530;--ok:#68d391;--warn:#f4c56c}
-body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,sans-serif}
+:root{--primary:#7e287e;--primary2:#541a59;--accent:#a64aa1;--bg:#f8f5f9;--card:#fff;--text:#28202c;--muted:#716777;--border:#e4dce6;--soft:#f7f3f8;--soft-blue:#f8f2fa;--header-bg:rgba(255,255,255,.9);--input-bg:#fff;--ok:#16803c;--warn:#9a5a09;--danger:#b3343a;--shadow:0 8px 28px rgba(67,28,72,.08)}
+html[data-theme="dark"]{color-scheme:dark;--primary:#c679c0;--primary2:#e0a8dc;--accent:#d899d3;--bg:#171218;--card:#241d26;--text:#f6edf6;--muted:#c6b7c8;--border:#443747;--soft:#302733;--soft-blue:#302435;--header-bg:rgba(31,24,33,.9);--input-bg:#2c2530;--ok:#68d391;--warn:#f4c56c;--danger:#f07178;--shadow:0 10px 32px rgba(0,0,0,.2)}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;transition:background-color .22s ease,color .22s ease}
 body.welcome-open{overflow:hidden}
-header{position:relative;background:var(--header-bg);border-bottom:1px solid var(--border);box-shadow:0 2px 12px rgba(70,29,75,.06);padding:12px 18px;color:var(--text)}
+body.modal-open{overflow:hidden}
+header{position:sticky;top:0;z-index:50;background:var(--header-bg);border-bottom:1px solid var(--border);box-shadow:0 2px 12px rgba(70,29,75,.06);padding:12px 18px;color:var(--text);backdrop-filter:blur(14px);transition:background-color .22s ease,border-color .22s ease}
 .header-inner{max-width:720px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:20px}
-.brand-logo{display:flex;align-items:center;gap:10px;flex-shrink:0}.brand-mark{position:relative;display:grid;place-items:center;width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,#a64aa1,#5c1b63);color:#fff;box-shadow:0 5px 13px rgba(92,27,99,.25);font-family:Georgia,serif;font-size:25px;font-weight:bold;font-style:italic}.brand-mark:after{content:"";position:absolute;right:5px;top:5px;width:9px;height:6px;border-radius:100% 0 100% 0;background:#dbaed8;transform:rotate(-25deg)}.brand-copy{line-height:1}.brand-title{margin:0;color:#4e1754;font-size:21px;letter-spacing:1.4px;font-weight:800}.brand-tagline{margin:4px 0 0;color:#88718d;font-size:10px;letter-spacing:.7px;text-transform:uppercase}
+.brand-logo{display:flex;align-items:center;gap:10px;flex-shrink:0}.brand-mark{position:relative;display:grid;place-items:center;width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,#a64aa1,#5c1b63);color:#fff;box-shadow:0 5px 13px rgba(92,27,99,.25);font-family:Georgia,serif;font-size:25px;font-weight:bold;font-style:italic}.brand-mark:after{content:"";position:absolute;right:5px;top:5px;width:9px;height:6px;border-radius:100% 0 100% 0;background:#dbaed8;transform:rotate(-25deg)}.brand-copy{line-height:1}.brand-title{margin:0;color:var(--primary2);font-size:21px;letter-spacing:1.4px;font-weight:800}.brand-tagline{margin:4px 0 0;color:var(--muted);font-size:10px;letter-spacing:.7px;text-transform:uppercase}
 .container{max-width:720px;margin:auto;padding:16px}
-.card{background:var(--card);border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:0 3px 12px rgba(0,0,0,.08)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:19px;margin-bottom:16px;box-shadow:var(--shadow);transition:background-color .22s ease,border-color .22s ease,box-shadow .22s ease}
 h2{font-size:19px;margin:0 0 12px}
 label{display:block;font-weight:bold;font-size:14px;margin:10px 0 6px}
-select,input{width:100%;padding:12px;border:1px solid var(--border);border-radius:9px;font-size:15px;background:var(--input-bg);color:var(--text)}
+select,input,textarea{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font:inherit;font-size:15px;background:var(--input-bg);color:var(--text);transition:border-color .18s ease,box-shadow .18s ease,background-color .22s ease}
+select:focus,input:focus,textarea:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3px rgba(126,40,126,.13)}
 .camera{position:relative;width:100%;overflow:hidden;border-radius:13px;background:#000}
 video{display:block;width:100%;aspect-ratio:4/3;object-fit:cover}
 .guide{position:absolute;left:50%;top:50%;width:44%;aspect-ratio:1;transform:translate(-50%,-50%);border:3px solid #fff;border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.25);pointer-events:none}
 .guide:after{content:"Coloca la muestra aquí";position:absolute;left:50%;bottom:-31px;transform:translateX(-50%);white-space:nowrap;color:#fff;font-size:12px;text-shadow:0 1px 4px #000}
 .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-button{border:0;border-radius:9px;padding:12px 16px;font-size:15px;font-weight:bold;cursor:pointer;background:var(--primary);color:#fff;flex:1;min-width:145px}
+button{border:0;border-radius:10px;padding:12px 16px;font:inherit;font-size:15px;font-weight:700;cursor:pointer;background:var(--primary);color:#fff;flex:1;min-width:145px;transition:transform .16s ease,box-shadow .16s ease,background-color .18s ease,opacity .18s ease}
+button:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 15px rgba(86,28,92,.18)}
+button:active:not(:disabled){transform:translateY(0) scale(.985)}
+button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid rgba(166,74,161,.38);outline-offset:3px}
 button.secondary{background:#5b6470}
-button.danger{background:#a83232}
-button:disabled{opacity:.5;cursor:not-allowed}
+button.danger{background:var(--danger)}
+button:disabled{opacity:.68;cursor:not-allowed;box-shadow:none}
+button.busy{pointer-events:none;opacity:.78}
+button.busy:before{content:"";display:inline-block;width:13px;height:13px;margin-right:8px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;vertical-align:-2px;animation:spin .65s linear infinite}
 .status{font-size:13px;color:var(--muted);margin:10px 0 0;text-align:center;min-height:18px}
 .result{display:none;text-align:center;border:2px solid #dcecff}
 .ph{font-size:52px;font-weight:bold;color:var(--primary);margin:5px}
@@ -39,7 +47,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th,td{text-align:left;padding:9px;border-bottom:1px solid #eee}
 th{background:var(--soft)}
-.history-item{padding:12px 0;border-bottom:1px solid #eee}
+.history-item{padding:12px 0;border-bottom:1px solid var(--border);animation:itemIn .24s ease both}
 .history-item:last-child{border-bottom:0}
 .history-title{font-weight:bold}
 .history-meta{font-size:12px;color:var(--muted);margin-top:4px}
@@ -47,35 +55,40 @@ th{background:var(--soft)}
 details summary{cursor:pointer;font-weight:bold}
 .calib-info{background:var(--soft-blue);border:1px solid var(--border);padding:12px;border-radius:9px;font-size:13px;line-height:1.45}
 .nav{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:0;padding:0}
-.nav button{min-width:0;padding:11px 8px;font-size:13px;color:var(--muted);background:var(--card);border:1px solid var(--border);box-shadow:0 2px 8px rgba(31,41,55,.05)}.nav button.active{background:#42134f;color:#fff;border-color:#42134f;box-shadow:0 5px 13px rgba(66,19,79,.25)}
-.app-view{display:none}.app-view.view-active:not(.result){display:block}.app-view:not(.view-active){display:none!important}
+.nav button{min-width:0;padding:11px 8px;font-size:13px;color:var(--muted);background:var(--card);border:1px solid var(--border);box-shadow:0 2px 8px rgba(31,41,55,.05)}.nav button.active{background:var(--primary2);color:#fff;border-color:var(--primary2);box-shadow:0 5px 13px rgba(66,19,79,.25)}
+.app-view{display:none}.app-view.view-active:not(.result){display:block;animation:viewIn .25s ease both}.app-view:not(.view-active){display:none!important}
 .account-card{border:1px solid var(--border);background:linear-gradient(135deg,var(--card),var(--soft-blue))}
 .account-summary{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .account-name{font-size:17px;font-weight:bold}.account-detail{font-size:13px;color:var(--muted);margin-top:4px}
 .pill{display:inline-block;border-radius:999px;padding:5px 9px;background:var(--soft);color:var(--muted);font-size:12px;font-weight:bold}.pill.active{background:#dcfce7;color:#166534}.pill.warning{background:#fef3c7;color:#92400e}
 .auth-form{display:none;margin-top:14px;padding-top:4px;border-top:1px solid #dce6f1}.auth-form.show{display:block}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}
-.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.plan{border:1px solid var(--border);border-radius:12px;padding:13px;display:flex;flex-direction:column}.plan.featured{border:2px solid #7e287e;box-shadow:0 5px 15px rgba(126,40,126,.13)}.plan h3{margin:0;font-size:16px}.price{font-size:23px;font-weight:bold;margin:10px 0 3px;color:#42134f}.period{font-size:12px;color:var(--muted);margin-bottom:9px}.plan ul{padding-left:18px;margin:5px 0 14px;font-size:12px;line-height:1.5;flex:1}.plan button{min-width:0;padding:10px 7px;font-size:13px}
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.plan{position:relative;border:1px solid var(--border);border-radius:14px;padding:14px;display:flex;flex-direction:column;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}.plan:hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:0 9px 22px rgba(89,31,94,.1)}.plan.featured{border:2px solid var(--primary);box-shadow:0 5px 15px rgba(126,40,126,.13)}.plan h3{margin:0;font-size:16px}.price{font-size:23px;font-weight:bold;margin:10px 0 3px;color:var(--primary2)}.period{font-size:12px;color:var(--muted);margin-bottom:9px}.plan ul{padding-left:18px;margin:5px 0 14px;font-size:12px;line-height:1.5;flex:1}.plan button{min-width:0;padding:10px 7px;font-size:13px}.soon-badge{display:inline-flex;align-self:flex-start;margin-bottom:9px;padding:4px 8px;border-radius:999px;background:var(--soft);color:var(--muted);border:1px solid var(--border);font-size:10px;font-weight:800;letter-spacing:.45px;text-transform:uppercase}
 .notice{background:var(--soft-blue);border:1px solid var(--border);color:var(--text);border-radius:9px;padding:10px 12px;font-size:12px;line-height:1.45}
 .theme-setting{margin-top:16px;padding-top:15px;border-top:1px solid var(--border)}.theme-setting h2{margin-bottom:4px}.theme-setting .note{margin-top:0}.theme-setting select{margin-top:9px}
+.account-tools{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;padding-top:15px;border-top:1px solid var(--border)}.tool-button{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0;text-align:left;color:var(--text);background:var(--soft);border:1px solid var(--border);font-size:14px}.tool-button span:last-child{color:var(--primary);font-size:19px}
 #welcomeScreen{position:fixed;z-index:1000;inset:0;display:grid;place-items:center;overflow:hidden;background:#100b10;transition:opacity .55s ease,visibility .55s ease}
 #welcomeScreen.hidden{opacity:0;visibility:hidden;pointer-events:none}
 .welcome-bg{position:absolute;inset:-12px;background-position:center;background-size:cover;filter:brightness(.58) saturate(1.04);transform:scale(1.04);transition:opacity 1.35s ease,transform 15s ease;opacity:0}.welcome-bg.active{opacity:1;transform:scale(1.1)}
 .welcome-shade{position:absolute;inset:0;background:radial-gradient(circle at center,rgba(17,6,15,.16),rgba(7,3,8,.63))}
 .welcome-panel{position:relative;z-index:1;width:min(430px,calc(100% - 34px));padding:34px 28px 27px;border:1px solid rgba(255,255,255,.26);border-radius:24px;background:rgba(8,6,9,.78);box-shadow:0 20px 60px rgba(0,0,0,.52);text-align:center;color:#fff;backdrop-filter:blur(10px)}
-.welcome-panel h1{margin:0;font-family:Impact,"Arial Black",sans-serif;font-size:48px;letter-spacing:1px;color:#f2b2ed;text-shadow:0 3px 12px rgba(0,0,0,.45)}.welcome-panel p{margin:7px 0 25px;color:rgba(255,255,255,.82);font-size:14px;line-height:1.45}
+.welcome-brand{display:flex;justify-content:center;align-items:center;gap:12px;margin-bottom:9px}.welcome-mark{position:relative;display:grid;place-items:center;width:53px;height:53px;border-radius:17px;background:linear-gradient(135deg,#bc5bb5,#671e70);font:italic 800 31px Georgia,serif;box-shadow:0 8px 24px rgba(0,0,0,.3)}.welcome-mark:after{content:"";position:absolute;right:7px;top:6px;width:11px;height:7px;border-radius:100% 0 100% 0;background:#efc2eb;transform:rotate(-25deg)}.welcome-wordmark{font-size:37px;font-weight:900;letter-spacing:1.8px;color:#f2b2ed;text-shadow:0 3px 12px rgba(0,0,0,.45)}.welcome-panel p{margin:7px 0 25px;color:rgba(255,255,255,.82);font-size:14px;line-height:1.45}
 .welcome-actions{display:grid;gap:10px}.welcome-actions button{min-width:0;width:100%;padding:13px 14px;box-shadow:none}.welcome-actions .create{background:#000;border:1px solid rgba(255,255,255,.38)}.welcome-actions .login{background:#7e287e}.welcome-actions .guest{background:transparent;border:1px solid rgba(255,255,255,.48)}.welcome-actions .google{background:rgba(255,255,255,.9);color:#202124}.welcome-pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}.welcome-note{display:block;margin-top:18px;font-size:11px;color:rgba(255,255,255,.63)}
-@media(max-width:480px){.grid{grid-template-columns:1fr}.container{padding:10px}.card{padding:14px}}
-@media(max-width:560px){.plans{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.header-inner{flex-direction:column;align-items:stretch;gap:12px}.brand-logo{align-self:center}.nav{width:100%}}
-@media(prefers-reduced-motion:reduce){.welcome-bg,#welcomeScreen{transition:none}.welcome-bg.active{transform:scale(1.04)}}
+.site-footer{margin-top:8px;border-top:1px solid var(--border);background:var(--card);color:var(--muted)}.footer-inner{max-width:720px;margin:auto;padding:25px 16px 30px;display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}.footer-brand{font-size:13px;line-height:1.5}.footer-brand strong{display:block;color:var(--text);font-size:15px}.footer-links{display:flex;gap:7px;flex-wrap:wrap}.footer-links button,.footer-links a{min-width:0;padding:8px 10px;border:0;border-radius:8px;background:transparent;color:var(--muted);font:inherit;font-size:12px;font-weight:700;text-decoration:none;cursor:pointer;transition:color .16s ease,background-color .16s ease}.footer-links button:hover,.footer-links a:hover{color:var(--primary);background:var(--soft);transform:none;box-shadow:none}
+.modal-backdrop{position:fixed;z-index:1200;inset:0;display:grid;place-items:center;padding:18px;background:rgba(12,7,13,.64);backdrop-filter:blur(5px);opacity:0;visibility:hidden;transition:opacity .2s ease,visibility .2s ease}.modal-backdrop.open{opacity:1;visibility:visible}.modal{width:min(500px,100%);max-height:min(720px,calc(100vh - 36px));overflow:auto;padding:23px;border:1px solid var(--border);border-radius:18px;background:var(--card);color:var(--text);box-shadow:0 24px 70px rgba(0,0,0,.32);transform:translateY(8px) scale(.985);transition:transform .2s ease}.modal-backdrop.open .modal{transform:none}.modal-head{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:10px}.modal-head h2{margin:0}.modal-close{flex:0 0 auto;min-width:40px;width:40px;height:40px;padding:0;border-radius:50%;color:var(--muted);background:var(--soft);font-size:20px}.modal-content{font-size:14px;line-height:1.6;color:var(--muted)}.modal-content strong{color:var(--text)}.modal-content a{color:var(--primary);font-weight:700}.modal-actions{display:flex;gap:9px;margin-top:18px}.modal-actions a{display:inline-flex;align-items:center;justify-content:center;min-height:43px;padding:10px 14px;border-radius:10px;background:var(--primary);color:#fff;text-decoration:none;font-weight:700}.legal-placeholder{padding:13px;border:1px dashed var(--border);border-radius:10px;background:var(--soft)}
+.toast-region{position:fixed;z-index:1500;right:16px;bottom:16px;display:grid;gap:9px;width:min(380px,calc(100% - 32px));pointer-events:none}.toast{padding:12px 14px;border:1px solid var(--border);border-left:4px solid var(--primary);border-radius:11px;background:var(--card);color:var(--text);box-shadow:0 12px 32px rgba(0,0,0,.2);font-size:13px;line-height:1.4;animation:toastIn .2s ease both}.toast.success{border-left-color:var(--ok)}.toast.error{border-left-color:var(--danger)}.toast.out{animation:toastOut .18s ease both}
+@keyframes viewIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}@keyframes itemIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}@keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}@keyframes toastOut{to{opacity:0;transform:translateY(5px)}}@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:480px){.grid{grid-template-columns:1fr}.container{padding:10px}.card{padding:15px}.account-tools{grid-template-columns:1fr}.footer-inner{justify-content:center;text-align:center}.footer-links{justify-content:center}.welcome-panel{padding:27px 20px 23px}.welcome-wordmark{font-size:31px}.welcome-mark{width:47px;height:47px;font-size:27px}}
+@media(max-width:560px){.plans{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}header{padding:9px 10px}.header-inner{flex-direction:column;align-items:stretch;gap:9px}.brand-logo{align-self:center}.nav{width:100%}.nav button{padding:10px 5px}.site-footer{padding-bottom:4px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.welcome-bg.active{transform:scale(1.04)}}
 </style>
 </head>
 <body class="welcome-open">
 <section id="welcomeScreen" aria-label="Bienvenida a Moracol">
   <div id="welcomeBgA" class="welcome-bg active"></div><div id="welcomeBgB" class="welcome-bg"></div><div class="welcome-shade"></div>
   <div class="welcome-panel">
-    <h1>MORACOL</h1>
-    <p>Medí, guardá y compartí tus conservas caseras.</p>
+    <div class="welcome-brand" aria-label="Moracol"><span class="welcome-mark" aria-hidden="true">M</span><span class="welcome-wordmark">MORACOL</span></div>
+    <p>Medí y guardá tus conservas caseras con mayor precisión.</p>
     <div class="welcome-actions">
       <button id="welcomeCreate" class="create">Crear cuenta</button>
       <div class="welcome-pair"><button id="welcomeLogin" class="login">Iniciar sesión</button><button id="welcomeGuest" class="guest">Invitado</button></div>
@@ -124,17 +137,21 @@ details summary{cursor:pointer;font-weight:bold}
       <option value="dark">Oscuro</option>
     </select>
   </div>
+  <div class="account-tools" aria-label="Ayuda y soporte">
+    <button class="tool-button" data-modal="help"><span>Ayuda para usar Moracol</span><span aria-hidden="true">›</span></button>
+    <button class="tool-button" data-modal="report"><span>Reportar un problema</span><span aria-hidden="true">›</span></button>
+  </div>
 </section>
 
 <section id="planes" class="card app-view plans-view">
-  <h2>Elegí tu plan</h2>
+  <div class="account-summary"><h2 style="margin:0">Elegí tu plan</h2><span class="soon-badge">Próximamente</span></div>
   <p class="note">La cuenta gratuita incluye 1 medición. Podés cancelar cuando quieras: conservás el acceso ilimitado hasta el final del período ya abonado y no se realizan reembolsos por períodos iniciados.</p>
   <div class="plans" style="margin-top:14px">
-    <article class="plan"><h3>Plus</h3><div class="price">$2.000</div><div class="period">ARS · por semana</div><ul><li>Mediciones ilimitadas</li><li>Historial en la nube</li><li>Acceso por 7 días</li></ul><button data-plan="plus">Elegir Plus</button></article>
-    <article class="plan featured"><h3>Pro</h3><div class="price">$6.000</div><div class="period">ARS · por mes</div><ul><li>Mediciones ilimitadas</li><li>Historial en la nube</li><li>Acceso por 1 mes</li></ul><button data-plan="pro">Elegir Pro</button></article>
-    <article class="plan"><h3>Anual</h3><div class="price">$60.000</div><div class="period">ARS · por año</div><ul><li>Mediciones ilimitadas</li><li>Historial en la nube</li><li>Acceso por 1 año</li></ul><button data-plan="annual">Elegir Anual</button></article>
+    <article class="plan"><span class="soon-badge">En preparación</span><h3>Plus</h3><div class="price">$2.000</div><div class="period">ARS · por semana</div><ul><li>Mediciones ilimitadas</li><li>Historial en la nube</li><li>Acceso por 7 días</li></ul><button data-plan="plus" disabled>Próximamente</button></article>
+    <article class="plan featured"><span class="soon-badge">Recomendado</span><h3>Pro</h3><div class="price">$6.000</div><div class="period">ARS · por mes</div><ul><li>Mediciones ilimitadas</li><li>Historial en la nube</li><li>Acceso por 1 mes</li></ul><button data-plan="pro" disabled>Próximamente</button></article>
+    <article class="plan"><span class="soon-badge">En preparación</span><h3>Anual</h3><div class="price">$60.000</div><div class="period">ARS · por año</div><ul><li>Mediciones ilimitadas</li><li>Historial en la nube</li><li>Acceso por 1 año</li></ul><button data-plan="annual" disabled>Próximamente</button></article>
   </div>
-  <div id="paymentMessage" class="notice" style="display:none;margin-top:13px"></div>
+  <div id="paymentMessage" class="notice" style="margin-top:13px">Los cobros todavía no están habilitados. Estamos preparando una conexión segura con Mercado Pago.</div>
 </section>
 
 <section id="medir" class="card app-view measure-view">
@@ -195,6 +212,25 @@ La tabla que ya estaba dentro del código se conserva como la tabla de calibraci
 
 </main>
 
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-brand"><strong>Moracol</strong><span>Medición orientativa de pH para conservas.</span></div>
+    <div class="footer-links" aria-label="Información y soporte">
+      <a href="mailto:moracolph@gmail.com">Soporte</a>
+      <button data-modal="privacy">Privacidad</button>
+      <button data-modal="terms">Condiciones</button>
+    </div>
+  </div>
+</footer>
+
+<div id="infoModal" class="modal-backdrop" aria-hidden="true">
+  <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-head"><h2 id="modalTitle">Información</h2><button id="modalClose" class="modal-close" aria-label="Cerrar">×</button></div>
+    <div id="modalContent" class="modal-content"></div>
+  </section>
+</div>
+<div id="toastRegion" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+
 <canvas id="canvas" hidden></canvas>
 
 <script type="module">
@@ -241,10 +277,56 @@ const plans={
   annual:{name:'Anual',amount:60000,days:365,label:'1 año'}
 };
 
+const modalCopy={
+  help:{
+    title:'Ayuda para usar Moracol',
+    content:`<p><strong>Para medir:</strong> iniciá sesión, elegí el tipo de conserva, permití el uso de la cámara y colocá la muestra dentro del recuadro.</p><p>Usá una luz uniforme, evitá reflejos y repetí la captura si la calidad aparece como baja.</p><p>Moracol ofrece una estimación orientativa. Para decisiones de seguridad alimentaria, confirmá el resultado con un medidor de pH calibrado.</p><div class="modal-actions"><a href="mailto:moracolph@gmail.com?subject=Ayuda%20con%20Moracol">Contactar soporte</a></div>`
+  },
+  report:{
+    title:'Reportar un problema',
+    content:`<p>Contanos qué estabas haciendo, qué esperabas que ocurriera y qué apareció en pantalla. Si podés, adjuntá una captura.</p><p><strong>No envíes contraseñas, números de tarjeta ni credenciales privadas.</strong></p><div class="modal-actions"><a href="mailto:moracolph@gmail.com?subject=Reporte%20de%20problema%20en%20Moracol&body=Problema%3A%0A%0APasos%20para%20repetirlo%3A%0A%0ADispositivo%20y%20navegador%3A">Enviar reporte por correo</a></div>`
+  },
+  privacy:{
+    title:'Política de privacidad',
+    content:`<div class="legal-placeholder"><strong>Documento en preparación.</strong><p>La política de privacidad completa se publicará en este espacio antes de habilitar los cobros reales.</p></div><p>Para consultas sobre tus datos, escribinos a <a href="mailto:moracolph@gmail.com">moracolph@gmail.com</a>.</p>`
+  },
+  terms:{
+    title:'Términos y condiciones',
+    content:`<div class="legal-placeholder"><strong>Documento en preparación.</strong><p>Los términos y condiciones completos se publicarán en este espacio antes de habilitar los cobros reales.</p></div><p>Si tenés una consulta, escribinos a <a href="mailto:moracolph@gmail.com">moracolph@gmail.com</a>.</p>`
+  }
+};
+
+function showToast(message,type='info'){
+  const region=document.getElementById('toastRegion');
+  const toast=document.createElement('div');
+  toast.className=`toast ${type}`;
+  toast.textContent=message;
+  region.appendChild(toast);
+  window.setTimeout(()=>{toast.classList.add('out');window.setTimeout(()=>toast.remove(),200);},3600);
+}
+function setButtonBusy(button,busy,busyText='Procesando…'){
+  if(!button)return;
+  if(busy){button.dataset.previousText=button.textContent;button.textContent=busyText;button.classList.add('busy');button.disabled=true;}
+  else{button.textContent=button.dataset.previousText||button.textContent;button.classList.remove('busy');button.disabled=false;delete button.dataset.previousText;}
+}
+function openModal(type){
+  const copy=modalCopy[type];
+  if(!copy)return;
+  document.getElementById('modalTitle').textContent=copy.title;
+  document.getElementById('modalContent').innerHTML=copy.content;
+  const modal=document.getElementById('infoModal');
+  modal.classList.add('open');modal.setAttribute('aria-hidden','false');document.body.classList.add('modal-open');
+  window.setTimeout(()=>document.getElementById('modalClose').focus(),20);
+}
+function closeModal(){
+  const modal=document.getElementById('infoModal');
+  modal.classList.remove('open');modal.setAttribute('aria-hidden','true');document.body.classList.remove('modal-open');
+}
+
 const systemThemeQuery=window.matchMedia('(prefers-color-scheme: dark)');
 function getThemePreference(){return currentUser?.themePreference||localStorage.getItem('moracol_guest_theme')||'system';}
 function resolveTheme(preference){return preference==='system'?(systemThemeQuery.matches?'dark':'light'):preference;}
-function applyTheme(preference){document.documentElement.dataset.theme=resolveTheme(preference);}
+function applyTheme(preference){const theme=resolveTheme(preference);document.documentElement.dataset.theme=theme;document.getElementById('themeColor').content=theme==='dark'?'#241d26':'#7e287e';}
 function updateThemeControl(){
   const preference=getThemePreference();
   document.getElementById('themePreference').value=preference;
@@ -254,7 +336,7 @@ async function saveThemePreference(preference){
   if(currentUser){
     currentUser.themePreference=preference;
     try{await apiRequest('me',{method:'PATCH',body:JSON.stringify({themePreference:preference})});}
-    catch(error){alert(error.message);}
+    catch(error){showToast(error.message,'error');}
   }
   else localStorage.setItem('moracol_guest_theme',preference);
   applyTheme(preference);
@@ -337,7 +419,7 @@ function renderAccount(){
 }
 function setView(view){
   document.querySelectorAll('.app-view').forEach(section=>section.classList.toggle('view-active',section.classList.contains(`${view}-view`)));
-  document.querySelectorAll('.nav [data-view]').forEach(button=>button.classList.toggle('active',button.dataset.view===view));
+  document.querySelectorAll('.nav [data-view]').forEach(button=>{const active=button.dataset.view===view;button.classList.toggle('active',active);button.setAttribute('aria-current',active?'page':'false');});
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function openAuth(){setView('account');document.getElementById('authForm').classList.add('show');document.getElementById('authName').focus();}
@@ -353,34 +435,42 @@ function friendlyAuthError(error){
   return messages[error?.code]||'No se pudo completar el inicio de sesión. Intentá nuevamente.';
 }
 async function register(){
+  const button=document.getElementById('registerButton');
   const name=document.getElementById('authName').value.trim();
   const email=document.getElementById('authEmail').value.trim().toLowerCase();
   const password=document.getElementById('authPassword').value;
-  if(!name||!email||password.length<6){alert('Completá un apodo, un correo válido y una contraseña de al menos 6 caracteres.');return;}
+  if(!name||!email||password.length<6){showToast('Completá un apodo, un correo válido y una contraseña de al menos 6 caracteres.','error');return;}
   try{
+    setButtonBusy(button,true,'Creando cuenta…');
     const credential=await createUserWithEmailAndPassword(firebaseAuth,email,password);
     await updateProfile(credential.user,{displayName:name});
     currentUser=userFromFirebase(credential.user,name);
     guestMode=false;renderAccount();await syncAccount();
-    alert('Cuenta creada. Tenés 1 medición gratuita para probar Moracol.');
-  }catch(error){alert(friendlyAuthError(error));}
+    showToast('Cuenta creada. Tenés 1 medición gratuita para probar Moracol.','success');
+  }catch(error){showToast(friendlyAuthError(error),'error');}
+  finally{setButtonBusy(button,false);}
 }
 async function login(){
+  const button=document.getElementById('loginButton');
   const email=document.getElementById('authEmail').value.trim().toLowerCase();
   const password=document.getElementById('authPassword').value;
-  if(!email||!password){alert('Completá tu correo y contraseña.');return;}
+  if(!email||!password){showToast('Completá tu correo y contraseña.','error');return;}
   try{
+    setButtonBusy(button,true,'Ingresando…');
     const credential=await signInWithEmailAndPassword(firebaseAuth,email,password);
     currentUser=userFromFirebase(credential.user);guestMode=false;renderAccount();await syncAccount();
-  }catch(error){alert(friendlyAuthError(error));}
+    showToast('Sesión iniciada correctamente.','success');
+  }catch(error){showToast(friendlyAuthError(error),'error');}
+  finally{setButtonBusy(button,false);}
 }
 async function signOut(){
   try{await firebaseSignOut(firebaseAuth);}
-  catch(error){alert(friendlyAuthError(error));return;}
+  catch(error){showToast(friendlyAuthError(error),'error');return;}
   currentUser=null;guestMode=false;pendingMeasurement=null;resultEl.style.display='none';renderAccount();renderHistory();setView('measure');
+  showToast('Cerraste sesión.','success');
 }
 function choosePlan(planId){
-  if(!currentUser){alert('Primero creá una cuenta o iniciá sesión para elegir un plan.');openAuth();return;}
+  if(!currentUser){showToast('Primero creá una cuenta o iniciá sesión para elegir un plan.','error');openAuth();return;}
   selectedPlan=plans[planId];
   const message=document.getElementById('paymentMessage');
   message.style.display='block';
@@ -388,10 +478,14 @@ function choosePlan(planId){
   message.scrollIntoView({behavior:'smooth',block:'center'});
 }
 async function signInWithGoogle(){
+  const buttons=[document.getElementById('googleButton'),document.getElementById('welcomeGoogle')];
   try{
+    buttons.forEach(button=>setButtonBusy(button,true,'Conectando…'));
     const credential=await signInWithPopup(firebaseAuth,googleProvider);
     currentUser=userFromFirebase(credential.user);guestMode=false;closeWelcome();renderAccount();await syncAccount();setView('measure');
-  }catch(error){alert(friendlyAuthError(error));}
+    showToast('Ingresaste con Google correctamente.','success');
+  }catch(error){showToast(friendlyAuthError(error),'error');}
+  finally{buttons.forEach(button=>setButtonBusy(button,false));}
 }
 
 const welcomeBackgrounds=Array.from({length:15},(_,index)=>`moracol-assets/fondo-conserva-${String(index+1).padStart(2,'0')}.jpg`);
@@ -570,30 +664,34 @@ function estimatePH(rgb){
 }
 
 async function captureMeasurement(){
+  const captureButton=document.getElementById('capture');
   const access=accessState();
   if(!access.allowed){
-    alert(access.message);
+    showToast(access.message,'error');
     setView('plans');
     return;
   }
   if(!video.videoWidth){
-    alert('La cámara todavía no está lista.');
+    showToast('La cámara todavía no está lista.','error');
     return;
   }
 
   try{
+    setButtonBusy(captureButton,true,'Midiendo…');
     const remoteAccess=await apiRequest('access/consume',{method:'POST'});
     if(remoteAccess.freeConsumed){currentUser.freeMeasurementUsed=true;renderAccount();}
   }catch(error){
-    alert(error.message);
+    showToast(error.message,'error');
     setView('plans');
+    setButtonBusy(captureButton,false);
     return;
   }
 
-  canvas.width=video.videoWidth;
-  canvas.height=video.videoHeight;
-  const ctx=canvas.getContext('2d',{willReadFrequently:true});
-  ctx.drawImage(video,0,0,canvas.width,canvas.height);
+  try{
+    canvas.width=video.videoWidth;
+    canvas.height=video.videoHeight;
+    const ctx=canvas.getContext('2d',{willReadFrequently:true});
+    ctx.drawImage(video,0,0,canvas.width,canvas.height);
 
   // Área central correspondiente al recuadro.
   const size=Math.floor(Math.min(canvas.width,canvas.height)*0.44);
@@ -620,18 +718,29 @@ async function captureMeasurement(){
   phEl.textContent=result.ph.toFixed(1);
   confidenceEl.textContent=result.confidence;
   conservaEl.textContent=conservaSelect.value;
-  resultEl.style.display='block';
-  resultEl.scrollIntoView({behavior:'smooth',block:'center'});
+    resultEl.style.display='block';
+    resultEl.scrollIntoView({behavior:'smooth',block:'center'});
+    showToast('Medición completada. Revisá el resultado.','success');
+  }catch(error){
+    console.error(error);
+    showToast('No se pudo procesar la imagen. Intentá nuevamente.','error');
+  }finally{
+    setButtonBusy(captureButton,false);
+  }
 }
 
 async function saveMeasurement(){
   if(!pendingMeasurement)return;
-  if(!currentUser){alert('Iniciá sesión para guardar la medición.');return;}
+  if(!currentUser){showToast('Iniciá sesión para guardar la medición.','error');return;}
+  const button=document.getElementById('save');
   try{
+    setButtonBusy(button,true,'Guardando…');
     await apiRequest('measurements',{method:'POST',body:JSON.stringify(pendingMeasurement)});
     await loadHistory();
     statusEl.textContent='Medición guardada en la nube correctamente.';
-  }catch(error){alert(error.message);}
+    showToast('Medición guardada en la nube.','success');
+  }catch(error){showToast(error.message,'error');}
+  finally{setButtonBusy(button,false);}
 }
 
 function formatDate(iso){
@@ -686,7 +795,7 @@ document.getElementById('clearHistory').addEventListener('click',async()=>{
   if(!currentUser)return;
   if(confirm('¿Seguro que quieres borrar todo el historial?')){
     try{await apiRequest('measurements',{method:'DELETE'});cloudHistory=[];renderHistory();}
-    catch(error){alert(error.message);}
+    catch(error){showToast(error.message,'error');}
   }
 });
 document.querySelectorAll('.nav [data-view]').forEach(button=>button.addEventListener('click',()=>setView(button.dataset.view)));
@@ -706,6 +815,10 @@ document.getElementById('welcomeCreate').addEventListener('click',welcomeToAuth)
 document.getElementById('welcomeLogin').addEventListener('click',welcomeToAuth);
 document.getElementById('welcomeGuest').addEventListener('click',enterAsGuest);
 document.getElementById('welcomeGoogle').addEventListener('click',signInWithGoogle);
+document.querySelectorAll('[data-modal]').forEach(button=>button.addEventListener('click',()=>openModal(button.dataset.modal)));
+document.getElementById('modalClose').addEventListener('click',closeModal);
+document.getElementById('infoModal').addEventListener('click',event=>{if(event.target.id==='infoModal')closeModal();});
+document.addEventListener('keydown',event=>{if(event.key==='Escape')closeModal();});
 
 onAuthStateChanged(firebaseAuth,async firebaseUser=>{
   if(firebaseUser){
