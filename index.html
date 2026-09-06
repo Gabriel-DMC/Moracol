@@ -112,7 +112,7 @@ details summary{cursor:pointer;font-weight:bold}
     </div>
     <div class="controls"><button id="registerButton">Crear cuenta</button><button id="loginButton" class="secondary">Ingresar</button></div>
     <button id="googleButton" class="secondary" style="width:100%;margin-top:8px">G Continuar con Google</button>
-    <p class="note">En esta maqueta, las cuentas se guardan solo en este navegador. La versión publicada conectará estas opciones con Firebase para que funcionen de verdad entre dispositivos.</p>
+    <p class="note">El inicio de sesión funciona con Firebase. En el siguiente paso, el historial y los planes se guardarán también en la nube.</p>
   </div>
   <div class="theme-setting">
     <h2>Apariencia</h2>
@@ -197,7 +197,28 @@ La tabla que ya estaba dentro del código se conserva como la tabla de calibraci
 
 <canvas id="canvas" hidden></canvas>
 
-<script>
+<script type="module">
+import {initializeApp} from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js';
+import {
+  getAuth, GoogleAuthProvider, createUserWithEmailAndPassword,
+  signInWithEmailAndPassword, signInWithPopup, signOut as firebaseSignOut,
+  onAuthStateChanged, updateProfile
+} from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js';
+
+// Esta configuración identifica a la app web pública. No contiene contraseñas
+// ni la clave privada de ningún servicio de Moracol.
+const firebaseConfig={
+  apiKey:'AIzaSyB3LZHkENqVw0ckjaWaseeO2QParuhEfBM',
+  authDomain:'moracol.firebaseapp.com',
+  projectId:'moracol',
+  storageBucket:'moracol.firebasestorage.app',
+  messagingSenderId:'174245158926',
+  appId:'1:174245158926:web:e5a76cdf8a92f1743ddc5f'
+};
+const firebaseApp=initializeApp(firebaseConfig);
+const firebaseAuth=getAuth(firebaseApp);
+const googleProvider=new GoogleAuthProvider();
+
 const video=document.getElementById('video');
 const canvas=document.getElementById('canvas');
 const statusEl=document.getElementById('status');
@@ -239,17 +260,22 @@ function readJSON(key,fallback){
   catch{return fallback;}
 }
 function writeJSON(key,value){localStorage.setItem(key,JSON.stringify(value));}
-function getUsers(){return readJSON('moracol_demo_users',[]);}
-function saveUsers(users){writeJSON('moracol_demo_users',users);}
-function loadSession(){
-  const id=localStorage.getItem('moracol_demo_session');
-  currentUser=getUsers().find(user=>user.id===id)||null;
+function profileKey(uid){return `moracol_profile_${uid}`;}
+function userFromFirebase(firebaseUser,preferredName=''){
+  const saved=readJSON(profileKey(firebaseUser.uid),{});
+  return {
+    id:firebaseUser.uid,
+    name:firebaseUser.displayName||preferredName||saved.name||firebaseUser.email?.split('@')[0]||'Usuario',
+    email:firebaseUser.email||'',
+    freeMeasurementUsed:saved.freeMeasurementUsed||false,
+    hasHadSubscription:saved.hasHadSubscription||false,
+    subscription:saved.subscription||null,
+    themePreference:saved.themePreference||'system'
+  };
 }
 function persistCurrentUser(){
   if(!currentUser)return;
-  const users=getUsers();
-  const index=users.findIndex(user=>user.id===currentUser.id);
-  if(index>=0){users[index]=currentUser;saveUsers(users);}
+  writeJSON(profileKey(currentUser.id),currentUser);
 }
 function storageKey(type){return currentUser?`moracol_${type}_${currentUser.id}`:'moracol_history';}
 function activePlan(){
@@ -304,26 +330,43 @@ function setView(view){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function openAuth(){setView('account');document.getElementById('authForm').classList.add('show');document.getElementById('authName').focus();}
-function register(){
+function friendlyAuthError(error){
+  const messages={
+    'auth/email-already-in-use':'Ya existe una cuenta con este correo. Elegí Ingresar.',
+    'auth/invalid-credential':'Correo o contraseña incorrectos.',
+    'auth/invalid-email':'Escribí un correo electrónico válido.',
+    'auth/weak-password':'La contraseña debe tener al menos 6 caracteres.',
+    'auth/popup-closed-by-user':'Se cerró la ventana de Google antes de terminar el ingreso.',
+    'auth/popup-blocked':'El navegador bloqueó la ventana de Google. Permitila e intentá otra vez.'
+  };
+  return messages[error?.code]||'No se pudo completar el inicio de sesión. Intentá nuevamente.';
+}
+async function register(){
   const name=document.getElementById('authName').value.trim();
   const email=document.getElementById('authEmail').value.trim().toLowerCase();
   const password=document.getElementById('authPassword').value;
   if(!name||!email||password.length<6){alert('Completá un apodo, un correo válido y una contraseña de al menos 6 caracteres.');return;}
-  const users=getUsers();
-  if(users.some(user=>user.email===email)){alert('Ya existe una cuenta con este correo. Elegí Ingresar.');return;}
-  currentUser={id:crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random()}`,name,email,password,freeMeasurementUsed:false,hasHadSubscription:false,subscription:null,themePreference:'system'};
-  users.push(currentUser);saveUsers(users);localStorage.setItem('moracol_demo_session',currentUser.id);renderAccount();renderHistory();
-  alert('Cuenta creada. Tenés 1 medición gratuita para probar Moracol.');
+  try{
+    const credential=await createUserWithEmailAndPassword(firebaseAuth,email,password);
+    await updateProfile(credential.user,{displayName:name});
+    currentUser=userFromFirebase(credential.user,name);
+    persistCurrentUser();guestMode=false;renderAccount();renderHistory();
+    alert('Cuenta creada. Tenés 1 medición gratuita para probar Moracol.');
+  }catch(error){alert(friendlyAuthError(error));}
 }
-function login(){
+async function login(){
   const email=document.getElementById('authEmail').value.trim().toLowerCase();
   const password=document.getElementById('authPassword').value;
-  currentUser=getUsers().find(user=>user.email===email&&user.password===password)||null;
-  if(!currentUser){alert('Correo o contraseña incorrectos.');return;}
-  localStorage.setItem('moracol_demo_session',currentUser.id);renderAccount();renderHistory();
+  if(!email||!password){alert('Completá tu correo y contraseña.');return;}
+  try{
+    const credential=await signInWithEmailAndPassword(firebaseAuth,email,password);
+    currentUser=userFromFirebase(credential.user);guestMode=false;renderAccount();renderHistory();
+  }catch(error){alert(friendlyAuthError(error));}
 }
-function signOut(){
-  localStorage.removeItem('moracol_demo_session');currentUser=null;guestMode=false;pendingMeasurement=null;resultEl.style.display='none';renderAccount();renderHistory();setView('measure');
+async function signOut(){
+  try{await firebaseSignOut(firebaseAuth);}
+  catch(error){alert(friendlyAuthError(error));return;}
+  currentUser=null;guestMode=false;pendingMeasurement=null;resultEl.style.display='none';renderAccount();renderHistory();setView('measure');
 }
 function cancelPlan(){
   const subscription=activePlan();
@@ -348,7 +391,12 @@ function activateDemoPlan(){
   currentUser.subscription={planId:Object.keys(plans).find(key=>plans[key]===selectedPlan),planName:selectedPlan.name,endsAt:base.toISOString(),cancelled:false};
   currentUser.hasHadSubscription=true;persistCurrentUser();document.getElementById('paymentMessage').innerHTML='<strong>Plan de prueba activado.</strong> En producción, este cambio ocurrirá solo cuando Mercado Pago confirme el pago.';renderAccount();
 }
-function googleDemo(){alert('El ingreso con Google se conectará al configurar Firebase Authentication. En esta maqueta usá correo y contraseña.');}
+async function signInWithGoogle(){
+  try{
+    const credential=await signInWithPopup(firebaseAuth,googleProvider);
+    currentUser=userFromFirebase(credential.user);guestMode=false;closeWelcome();renderAccount();renderHistory();setView('measure');
+  }catch(error){alert(friendlyAuthError(error));}
+}
 
 const welcomeBackgrounds=Array.from({length:15},(_,index)=>`moracol-assets/fondo-conserva-${String(index+1).padStart(2,'0')}.jpg`);
 let activeWelcomeLayer=0;
@@ -637,15 +685,21 @@ document.getElementById('accountActions').addEventListener('click',event=>{
 });
 document.getElementById('registerButton').addEventListener('click',register);
 document.getElementById('loginButton').addEventListener('click',login);
-document.getElementById('googleButton').addEventListener('click',googleDemo);
+document.getElementById('googleButton').addEventListener('click',signInWithGoogle);
 document.querySelectorAll('[data-plan]').forEach(button=>button.addEventListener('click',()=>choosePlan(button.dataset.plan)));
 document.getElementById('paymentMessage').addEventListener('click',event=>{if(event.target.id==='demoPayment')activateDemoPlan();});
 document.getElementById('welcomeCreate').addEventListener('click',welcomeToAuth);
 document.getElementById('welcomeLogin').addEventListener('click',welcomeToAuth);
 document.getElementById('welcomeGuest').addEventListener('click',enterAsGuest);
-document.getElementById('welcomeGoogle').addEventListener('click',()=>{closeWelcome();googleDemo();openAuth();});
+document.getElementById('welcomeGoogle').addEventListener('click',signInWithGoogle);
 
-loadSession();
+onAuthStateChanged(firebaseAuth,firebaseUser=>{
+  if(firebaseUser){
+    currentUser=userFromFirebase(firebaseUser);guestMode=false;renderAccount();renderHistory();
+  }else if(!guestMode){
+    currentUser=null;renderAccount();renderHistory();
+  }
+});
 startWelcomeSlideshow();
 populateCalibration();
 renderAccount();
