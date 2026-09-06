@@ -233,6 +233,7 @@ let pendingMeasurement=null;
 let currentUser=null;
 let selectedPlan=null;
 let guestMode=false;
+let cloudHistory=[];
 
 const plans={
   plus:{name:'Plus',amount:2000,days:7,label:'1 semana'},
@@ -249,35 +250,45 @@ function updateThemeControl(){
   document.getElementById('themePreference').value=preference;
   applyTheme(preference);
 }
-function saveThemePreference(preference){
-  if(currentUser){currentUser.themePreference=preference;persistCurrentUser();}
+async function saveThemePreference(preference){
+  if(currentUser){
+    currentUser.themePreference=preference;
+    try{await apiRequest('me',{method:'PATCH',body:JSON.stringify({themePreference:preference})});}
+    catch(error){alert(error.message);}
+  }
   else localStorage.setItem('moracol_guest_theme',preference);
   applyTheme(preference);
 }
 
-function readJSON(key,fallback){
-  try{return JSON.parse(localStorage.getItem(key)||JSON.stringify(fallback));}
-  catch{return fallback;}
-}
-function writeJSON(key,value){localStorage.setItem(key,JSON.stringify(value));}
-function profileKey(uid){return `moracol_profile_${uid}`;}
 function userFromFirebase(firebaseUser,preferredName=''){
-  const saved=readJSON(profileKey(firebaseUser.uid),{});
   return {
     id:firebaseUser.uid,
-    name:firebaseUser.displayName||preferredName||saved.name||firebaseUser.email?.split('@')[0]||'Usuario',
+    name:firebaseUser.displayName||preferredName||firebaseUser.email?.split('@')[0]||'Usuario',
     email:firebaseUser.email||'',
-    freeMeasurementUsed:saved.freeMeasurementUsed||false,
-    hasHadSubscription:saved.hasHadSubscription||false,
-    subscription:saved.subscription||null,
-    themePreference:saved.themePreference||'system'
+    freeMeasurementUsed:false,
+    hasHadSubscription:false,
+    subscription:null,
+    themePreference:'system'
   };
 }
-function persistCurrentUser(){
-  if(!currentUser)return;
-  writeJSON(profileKey(currentUser.id),currentUser);
+async function apiRequest(path,options={}){
+  const firebaseUser=firebaseAuth.currentUser;
+  if(!firebaseUser)throw new Error('Iniciá sesión nuevamente.');
+  const token=await firebaseUser.getIdToken();
+  const apiResponse=await fetch(`/api/${path}`,{
+    ...options,
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`,...options.headers}
+  });
+  const data=await apiResponse.json().catch(()=>({}));
+  if(!apiResponse.ok)throw new Error(data.error||'No se pudo conectar con la nube.');
+  return data;
 }
-function storageKey(type){return currentUser?`moracol_${type}_${currentUser.id}`:'moracol_history';}
+async function syncAccount(){
+  const profile=await apiRequest('me');
+  currentUser=profile;
+  renderAccount();
+  await loadHistory();
+}
 function activePlan(){
   return currentUser?.subscription && new Date(currentUser.subscription.endsAt)>new Date()
     ? currentUser.subscription : null;
@@ -320,7 +331,7 @@ function renderAccount(){
       pill.textContent='Cuenta gratuita'; pill.className='pill warning';
     }
     auth.classList.remove('show');
-    actions.innerHTML=`${subscription&&!subscription.cancelled?'<button id="cancelPlan" class="secondary">Cancelar plan</button>':''}<button id="signOut" class="danger">Cerrar sesión</button>`;
+    actions.innerHTML='<button id="signOut" class="danger">Cerrar sesión</button>';
   }
   updateAccessUI();updateThemeControl();
 }
@@ -350,7 +361,7 @@ async function register(){
     const credential=await createUserWithEmailAndPassword(firebaseAuth,email,password);
     await updateProfile(credential.user,{displayName:name});
     currentUser=userFromFirebase(credential.user,name);
-    persistCurrentUser();guestMode=false;renderAccount();renderHistory();
+    guestMode=false;renderAccount();await syncAccount();
     alert('Cuenta creada. Tenés 1 medición gratuita para probar Moracol.');
   }catch(error){alert(friendlyAuthError(error));}
 }
@@ -360,7 +371,7 @@ async function login(){
   if(!email||!password){alert('Completá tu correo y contraseña.');return;}
   try{
     const credential=await signInWithEmailAndPassword(firebaseAuth,email,password);
-    currentUser=userFromFirebase(credential.user);guestMode=false;renderAccount();renderHistory();
+    currentUser=userFromFirebase(credential.user);guestMode=false;renderAccount();await syncAccount();
   }catch(error){alert(friendlyAuthError(error));}
 }
 async function signOut(){
@@ -368,33 +379,18 @@ async function signOut(){
   catch(error){alert(friendlyAuthError(error));return;}
   currentUser=null;guestMode=false;pendingMeasurement=null;resultEl.style.display='none';renderAccount();renderHistory();setView('measure');
 }
-function cancelPlan(){
-  const subscription=activePlan();
-  if(!subscription)return;
-  if(!confirm(`¿Cancelar ${subscription.planName}? Vas a conservar las mediciones ilimitadas hasta ${formatDate(subscription.endsAt)}. No se harán reembolsos.`))return;
-  currentUser.subscription.cancelled=true;persistCurrentUser();renderAccount();
-  alert('Plan cancelado. Tu acceso se mantiene hasta la fecha de vencimiento.');
-}
 function choosePlan(planId){
   if(!currentUser){alert('Primero creá una cuenta o iniciá sesión para elegir un plan.');openAuth();return;}
   selectedPlan=plans[planId];
   const message=document.getElementById('paymentMessage');
   message.style.display='block';
-  message.innerHTML=`Elegiste <strong>${selectedPlan.name}</strong>: $${selectedPlan.amount.toLocaleString('es-AR')} ARS por ${selectedPlan.label}. En la versión publicada, este botón abrirá Mercado Pago. <button id="demoPayment" style="margin:8px 0 0;min-width:auto;padding:8px 10px">Activar plan de prueba</button>`;
+  message.innerHTML=`Elegiste <strong>${selectedPlan.name}</strong>: $${selectedPlan.amount.toLocaleString('es-AR')} ARS por ${selectedPlan.label}. El cobro se habilitará cuando conectemos la cuenta de Mercado Pago del profesor.`;
   message.scrollIntoView({behavior:'smooth',block:'center'});
-}
-function activateDemoPlan(){
-  if(!currentUser||!selectedPlan)return;
-  const now=new Date();
-  const base=activePlan()?new Date(currentUser.subscription.endsAt):now;
-  base.setDate(base.getDate()+selectedPlan.days);
-  currentUser.subscription={planId:Object.keys(plans).find(key=>plans[key]===selectedPlan),planName:selectedPlan.name,endsAt:base.toISOString(),cancelled:false};
-  currentUser.hasHadSubscription=true;persistCurrentUser();document.getElementById('paymentMessage').innerHTML='<strong>Plan de prueba activado.</strong> En producción, este cambio ocurrirá solo cuando Mercado Pago confirme el pago.';renderAccount();
 }
 async function signInWithGoogle(){
   try{
     const credential=await signInWithPopup(firebaseAuth,googleProvider);
-    currentUser=userFromFirebase(credential.user);guestMode=false;closeWelcome();renderAccount();renderHistory();setView('measure');
+    currentUser=userFromFirebase(credential.user);guestMode=false;closeWelcome();renderAccount();await syncAccount();setView('measure');
   }catch(error){alert(friendlyAuthError(error));}
 }
 
@@ -573,7 +569,7 @@ function estimatePH(rgb){
   return {ph:best.ph,lab,hsv,distance:labDistance,hueDistance:hDistance,reference:best.reference,confidence};
 }
 
-function captureMeasurement(){
+async function captureMeasurement(){
   const access=accessState();
   if(!access.allowed){
     alert(access.message);
@@ -582,6 +578,15 @@ function captureMeasurement(){
   }
   if(!video.videoWidth){
     alert('La cámara todavía no está lista.');
+    return;
+  }
+
+  try{
+    const remoteAccess=await apiRequest('access/consume',{method:'POST'});
+    if(remoteAccess.freeConsumed){currentUser.freeMeasurementUsed=true;renderAccount();}
+  }catch(error){
+    alert(error.message);
+    setView('plans');
     return;
   }
 
@@ -600,6 +605,7 @@ function captureMeasurement(){
   const result=estimatePH(rgb);
 
   pendingMeasurement={
+    id:crypto.randomUUID(),
     conserva:conservaSelect.value,
     ph:result.ph,
     hsv:result.hsv,
@@ -611,12 +617,6 @@ function captureMeasurement(){
     timestamp:new Date().toISOString()
   };
 
-  if(access.free){
-    currentUser.freeMeasurementUsed=true;
-    persistCurrentUser();
-    renderAccount();
-  }
-
   phEl.textContent=result.ph.toFixed(1);
   confidenceEl.textContent=result.confidence;
   conservaEl.textContent=conservaSelect.value;
@@ -624,29 +624,45 @@ function captureMeasurement(){
   resultEl.scrollIntoView({behavior:'smooth',block:'center'});
 }
 
-function saveMeasurement(){
+async function saveMeasurement(){
   if(!pendingMeasurement)return;
   if(!currentUser){alert('Iniciá sesión para guardar la medición.');return;}
-  const history=readJSON(storageKey('history'),[]);
-  history.unshift(pendingMeasurement);
-  writeJSON(storageKey('history'),history);
-  renderHistory();
-  statusEl.textContent='Medición guardada correctamente.';
+  try{
+    await apiRequest('measurements',{method:'POST',body:JSON.stringify(pendingMeasurement)});
+    await loadHistory();
+    statusEl.textContent='Medición guardada en la nube correctamente.';
+  }catch(error){alert(error.message);}
 }
 
 function formatDate(iso){
   return new Date(iso).toLocaleString('es-AR');
 }
 
+async function loadHistory(){
+  if(!currentUser){cloudHistory=[];renderHistory();return;}
+  try{
+    const data=await apiRequest('measurements');
+    cloudHistory=(data.measurements||[]).map(item=>({
+      ...item,
+      lab:item.lab_l==null?null:{l:item.lab_l,a:item.lab_a,b:item.lab_b},
+      hsv:item.hsv_h==null?null:{h:item.hsv_h,s:item.hsv_s,v:item.hsv_v},
+      reference:item.reference_r==null?null:[item.reference_r,item.reference_g,item.reference_b],
+      hueDistance:item.hue_distance
+    }));
+    renderHistory();
+  }catch(error){
+    document.getElementById('history').innerHTML=`<p class="empty">${escapeHTML(error.message)}</p>`;
+  }
+}
+
 function renderHistory(){
   const box=document.getElementById('history');
   if(!currentUser){box.innerHTML='<p class="empty">Iniciá sesión para ver y guardar tu historial.</p>';return;}
-  const history=readJSON(storageKey('history'),[]);
-  if(!history.length){
+  if(!cloudHistory.length){
     box.innerHTML='<p class="empty">No hay mediciones guardadas.</p>';
     return;
   }
-  box.innerHTML=history.map(item=>`
+  box.innerHTML=cloudHistory.map(item=>`
     <div class="history-item">
       <div class="history-title">${escapeHTML(item.conserva)} — pH ${Number(item.ph).toFixed(1)}</div>
       <div class="history-meta">${item.lab ? `Lab(${item.lab.l.toFixed(1)}, ${item.lab.a.toFixed(1)}, ${item.lab.b.toFixed(1)}) · ΔE ${Number(item.distance).toFixed(1)} · ${escapeHTML(item.confidence||'Sin evaluar')}` : `RGB(${item.rgb.join(', ')}) · Distancia ${Number(item.distance).toFixed(1)}`} · ${formatDate(item.timestamp)}</div>
@@ -666,11 +682,11 @@ document.getElementById('switch').addEventListener('click',()=>{
   facingMode=facingMode==='environment'?'user':'environment';
   startCamera();
 });
-document.getElementById('clearHistory').addEventListener('click',()=>{
+document.getElementById('clearHistory').addEventListener('click',async()=>{
   if(!currentUser)return;
   if(confirm('¿Seguro que quieres borrar todo el historial?')){
-    localStorage.removeItem(storageKey('history'));
-    renderHistory();
+    try{await apiRequest('measurements',{method:'DELETE'});cloudHistory=[];renderHistory();}
+    catch(error){alert(error.message);}
   }
 });
 document.querySelectorAll('.nav [data-view]').forEach(button=>button.addEventListener('click',()=>setView(button.dataset.view)));
@@ -681,21 +697,20 @@ else systemThemeQuery.addListener(refreshSystemTheme);
 document.getElementById('accountActions').addEventListener('click',event=>{
   if(event.target.id==='showAuth')openAuth();
   if(event.target.id==='signOut')signOut();
-  if(event.target.id==='cancelPlan')cancelPlan();
 });
 document.getElementById('registerButton').addEventListener('click',register);
 document.getElementById('loginButton').addEventListener('click',login);
 document.getElementById('googleButton').addEventListener('click',signInWithGoogle);
 document.querySelectorAll('[data-plan]').forEach(button=>button.addEventListener('click',()=>choosePlan(button.dataset.plan)));
-document.getElementById('paymentMessage').addEventListener('click',event=>{if(event.target.id==='demoPayment')activateDemoPlan();});
 document.getElementById('welcomeCreate').addEventListener('click',welcomeToAuth);
 document.getElementById('welcomeLogin').addEventListener('click',welcomeToAuth);
 document.getElementById('welcomeGuest').addEventListener('click',enterAsGuest);
 document.getElementById('welcomeGoogle').addEventListener('click',signInWithGoogle);
 
-onAuthStateChanged(firebaseAuth,firebaseUser=>{
+onAuthStateChanged(firebaseAuth,async firebaseUser=>{
   if(firebaseUser){
-    currentUser=userFromFirebase(firebaseUser);guestMode=false;renderAccount();renderHistory();
+    currentUser=userFromFirebase(firebaseUser);guestMode=false;renderAccount();
+    try{await syncAccount();}catch(error){document.getElementById('history').innerHTML=`<p class="empty">${escapeHTML(error.message)}</p>`;}
   }else if(!guestMode){
     currentUser=null;renderAccount();renderHistory();
   }
