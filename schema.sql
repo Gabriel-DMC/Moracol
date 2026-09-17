@@ -38,6 +38,22 @@ CREATE TABLE IF NOT EXISTS measurements (
 CREATE INDEX IF NOT EXISTS idx_measurements_user_created
   ON measurements(firebase_uid, created_at DESC);
 
+-- Comparaciones de dos capturas: no contienen un valor de pH estimado.
+CREATE TABLE IF NOT EXISTS comparison_measurements (
+  id TEXT PRIMARY KEY,
+  firebase_uid TEXT NOT NULL,
+  preserve_name TEXT NOT NULL,
+  method TEXT NOT NULL,
+  within_range INTEGER NOT NULL CHECK (within_range IN (0, 1)),
+  indicator_json TEXT NOT NULL,
+  sample_json TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  FOREIGN KEY (firebase_uid) REFERENCES users(firebase_uid) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_comparisons_user_created
+  ON comparison_measurements(firebase_uid, created_at DESC);
+
 CREATE TABLE IF NOT EXISTS subscriptions (
   id TEXT PRIMARY KEY,
   firebase_uid TEXT NOT NULL,
@@ -63,4 +79,3 @@ CREATE TABLE IF NOT EXISTS payment_events (
   payload_json TEXT NOT NULL,
   processed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-

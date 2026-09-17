@@ -1,3 +1,5 @@
+import {METHOD,analyzeRGB,evaluateSample} from '../../moracol-assets/measurement.js';
+
 const FIREBASE_API_KEY = 'AIzaSyB3LZHkENqVw0ckjaWaseeO2QParuhEfBM';
 const MAX_BODY_BYTES = 16 * 1024;
 
@@ -124,6 +126,36 @@ function validateMeasurement(body) {
   return {id, preserveName, confidence, timestamp};
 }
 
+// Tabla adicional: conserva intacto el historial antiguo y no inventa pH.
+// IF NOT EXISTS permite actualizar una instalación existente sin borrar datos.
+async function ensureComparisonStorage(db) {
+  await db.batch([
+    db.prepare(`CREATE TABLE IF NOT EXISTS comparison_measurements (
+      id TEXT PRIMARY KEY, firebase_uid TEXT NOT NULL, preserve_name TEXT NOT NULL,
+      method TEXT NOT NULL, within_range INTEGER NOT NULL CHECK (within_range IN (0,1)),
+      indicator_json TEXT NOT NULL, sample_json TEXT NOT NULL, created_at TEXT NOT NULL,
+      FOREIGN KEY (firebase_uid) REFERENCES users(firebase_uid) ON DELETE CASCADE
+    )`),
+    db.prepare('CREATE INDEX IF NOT EXISTS idx_comparisons_user_created ON comparison_measurements(firebase_uid, created_at DESC)')
+  ]);
+}
+
+function validateComparison(body) {
+  const id=String(body.id||''),preserveName=String(body.conserva||'').trim();
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))
+    throw new HttpError(400,'Identificador de medición no válido.');
+  if(!preserveName||preserveName.length>100)throw new HttpError(400,'Nombre de conserva no válido.');
+  if(body.method!==METHOD)throw new HttpError(400,'Método no válido.');
+  let indicator,sample;
+  try {
+    indicator=analyzeRGB(body.indicator?.rgb);
+    sample=analyzeRGB(body.sample?.rgb);
+  } catch {throw new HttpError(400,'Datos de captura no válidos.');}
+  const evaluation=evaluateSample(indicator,sample);
+  // El servidor calcula las conversiones y el resultado, no confía en el cliente.
+  return {id,preserveName,indicator,sample,withinRange:evaluation.withinRange,timestamp:new Date().toISOString()};
+}
+
 async function route(request, env, identity, path) {
   if (request.method === 'GET' && path === 'me') {
     return response(await getProfile(env.DB, identity));
@@ -161,11 +193,33 @@ async function route(request, env, identity, path) {
       ORDER BY created_at DESC
       LIMIT 100
     `).bind(identity.uid).all();
-    return response({measurements: result.results});
+    await ensureComparisonStorage(env.DB);
+    const comparisons=await env.DB.prepare(`
+      SELECT id,preserve_name AS conserva,method,within_range,created_at AS timestamp
+      FROM comparison_measurements WHERE firebase_uid=?1
+      ORDER BY created_at DESC LIMIT 100
+    `).bind(identity.uid).all();
+    const measurements=[
+      ...result.results,
+      ...comparisons.results.map(row=>({...row,withinRange:Boolean(row.within_range)}))
+    ].sort((a,b)=>Date.parse(b.timestamp)-Date.parse(a.timestamp)).slice(0,100);
+    return response({measurements});
   }
 
   if (request.method === 'POST' && path === 'measurements') {
     const body = await readJson(request);
+    if(body?.method===METHOD) {
+      const clean=validateComparison(body);
+      await ensureComparisonStorage(env.DB);
+      await env.DB.prepare(`
+        INSERT OR IGNORE INTO comparison_measurements
+          (id,firebase_uid,preserve_name,method,within_range,indicator_json,sample_json,created_at)
+        VALUES (?1,?2,?3,?4,?5,?6,?7,?8)
+      `).bind(clean.id,identity.uid,clean.preserveName,METHOD,Number(clean.withinRange),
+        JSON.stringify(clean.indicator),JSON.stringify(clean.sample),clean.timestamp).run();
+      return response({ok:true,withinRange:clean.withinRange},201);
+    }
+    // Compatibilidad con capturas anteriores durante la actualización.
     const clean = validateMeasurement(body);
     await env.DB.prepare(`
       INSERT OR IGNORE INTO measurements (
@@ -184,7 +238,11 @@ async function route(request, env, identity, path) {
   }
 
   if (request.method === 'DELETE' && path === 'measurements') {
-    await env.DB.prepare('DELETE FROM measurements WHERE firebase_uid = ?1').bind(identity.uid).run();
+    await ensureComparisonStorage(env.DB);
+    await env.DB.batch([
+      env.DB.prepare('DELETE FROM measurements WHERE firebase_uid = ?1').bind(identity.uid),
+      env.DB.prepare('DELETE FROM comparison_measurements WHERE firebase_uid = ?1').bind(identity.uid)
+    ]);
     return response({ok: true});
   }
 
@@ -211,4 +269,3 @@ export async function onRequest(context) {
     return response({error: status === 500 ? 'Ocurrió un error en el servidor.' : error.message}, status);
   }
 }
-

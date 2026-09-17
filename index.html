@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta id="themeColor" name="theme-color" content="#7e287e">
-<title>Moracol — Medidor de pH para Conservas</title>
+<title>Moracol — Evaluación de conservas</title>
 <style>
 *{box-sizing:border-box}
 :root{--primary:#7e287e;--primary2:#541a59;--accent:#a64aa1;--bg:#f8f5f9;--card:#fff;--text:#28202c;--muted:#716777;--border:#e4dce6;--soft:#f7f3f8;--soft-blue:#f8f2fa;--header-bg:rgba(255,255,255,.9);--input-bg:#fff;--ok:#16803c;--warn:#9a5a09;--danger:#b3343a;--shadow:0 8px 28px rgba(67,28,72,.08)}
@@ -25,7 +25,7 @@ select:focus,input:focus,textarea:focus{outline:0;border-color:var(--accent);box
 .camera{position:relative;width:100%;overflow:hidden;border-radius:13px;background:#000}
 video{display:block;width:100%;aspect-ratio:4/3;object-fit:cover}
 .guide{position:absolute;left:50%;top:50%;width:44%;aspect-ratio:1;transform:translate(-50%,-50%);border:3px solid #fff;border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.25);pointer-events:none}
-.guide:after{content:"Coloca la muestra aquí";position:absolute;left:50%;bottom:-31px;transform:translateX(-50%);white-space:nowrap;color:#fff;font-size:12px;text-shadow:0 1px 4px #000}
+.guide:after{content:attr(data-label);position:absolute;left:50%;bottom:-31px;transform:translateX(-50%);white-space:nowrap;color:#fff;font-size:12px;text-shadow:0 1px 4px #000}
 .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 button{border:0;border-radius:10px;padding:12px 16px;font:inherit;font-size:15px;font-weight:700;cursor:pointer;background:var(--primary);color:#fff;flex:1;min-width:145px;transition:transform .16s ease,box-shadow .16s ease,background-color .18s ease,opacity .18s ease}
 button:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 15px rgba(86,28,92,.18)}
@@ -38,7 +38,7 @@ button.busy{pointer-events:none;opacity:.78}
 button.busy:before{content:"";display:inline-block;width:13px;height:13px;margin-right:8px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;vertical-align:-2px;animation:spin .65s linear infinite}
 .status{font-size:13px;color:var(--muted);margin:10px 0 0;text-align:center;min-height:18px}
 .result{display:none;text-align:center;border:2px solid #dcecff}
-.ph{font-size:52px;font-weight:bold;color:var(--primary);margin:5px}
+.verdict{font-size:clamp(26px,6vw,36px);font-weight:bold;color:var(--primary);margin:5px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
 .metric{background:var(--soft);border:1px solid var(--border);border-radius:9px;padding:10px}
 .metric small{display:block;color:var(--muted);margin-bottom:4px}
@@ -104,7 +104,7 @@ details summary{cursor:pointer;font-weight:bold}
     <div class="brand-copy"><h1 class="brand-title">MORACOL</h1><p class="brand-tagline">Conservas con precisión</p></div>
   </div>
   <nav class="nav" aria-label="Navegación principal">
-    <button class="active" data-view="measure">Medir pH</button><button data-view="plans">Planes</button><button data-view="account">Mi cuenta</button>
+    <button class="active" data-view="measure">Evaluar conserva</button><button data-view="plans">Planes</button><button data-view="account">Mi cuenta</button>
   </nav>
 </div>
 </header>
@@ -155,51 +155,30 @@ details summary{cursor:pointer;font-weight:bold}
 </section>
 
 <section id="medir" class="card app-view measure-view">
-  <div class="account-summary"><h2 style="margin:0">1. Preparar la medición</h2><span id="measurementAllowance" class="pill warning">Iniciá sesión</span></div>
+  <div class="account-summary"><h2 style="margin:0">Evaluar una conserva</h2><span id="measurementAllowance" class="pill warning">Iniciá sesión</span></div>
 <label for="conserva">Tipo de conserva</label>
 <input id="conserva" type="text" value="Dulce de batata" placeholder="Escribe el tipo de conserva">
-<p class="note">Coloca una pequeña muestra de la conserva preparada con el reactivo dentro del área indicada. Intenta usar iluminación uniforme y evita reflejos.</p>
+<p class="note">Usá la misma iluminación para ambas capturas y evitá reflejos. La comparación de color no certifica que una conserva sea segura para consumir.</p>
 </section>
 
 <section class="card app-view measure-view">
-<h2>2. Capturar la muestra</h2>
+<h2>Capturar imágenes</h2>
 <div class="camera">
 <video id="video" autoplay playsinline></video>
-<div class="guide"></div>
+<div class="guide" data-label="Colocá el indicador aquí"></div>
 </div>
 <div class="controls">
-<button id="capture">Medir pH</button>
-<button id="switch" class="secondary">Cambiar cámara</button>
+<button id="capture">Capturar indicador</button>
 </div>
 <p id="status" class="status">Solicitando acceso a la cámara…</p>
 </section>
 
 <section id="result" class="card result app-view measure-view">
 <h2>Resultado</h2>
-<div id="ph" class="ph">—</div>
-<div class="grid">
-<div class="metric"><small>Calidad de la captura</small><strong id="confidence">—</strong></div>
-<div class="metric"><small>Conserva</small><strong id="resultConserva">—</strong></div>
-</div>
-<p class="note"><strong>Importante:</strong> este resultado es una estimación basada en la tabla de calibración cargada. La iluminación, cámara, recipiente y reactivo pueden modificar el color. Para decisiones de seguridad alimentaria, se debe confirmar con un método de pH calibrado.</p>
+<div id="verdict" class="verdict" role="status" aria-live="polite">—</div>
 <div class="controls">
 <button id="save">Guardar medición</button>
 </div>
-</section>
-
-<section class="card app-view measure-view">
-<details>
-<summary>Tabla de calibración utilizada</summary>
-<div class="calib-info" style="margin-top:10px">
-La tabla que ya estaba dentro del código se conserva como la tabla de calibración del sistema. No se modifica ni se reemplaza.
-</div>
-<div style="overflow-x:auto;margin-top:10px">
-<table>
-<thead><tr><th>pH</th><th>R</th><th>G</th><th>B</th></tr></thead>
-<tbody id="calib-body"></tbody>
-</table>
-</div>
-</details>
 </section>
 
 <section class="card app-view account-view">
@@ -214,7 +193,7 @@ La tabla que ya estaba dentro del código se conserva como la tabla de calibraci
 
 <footer class="site-footer">
   <div class="footer-inner">
-    <div class="footer-brand"><strong>Moracol</strong><span>Medición orientativa de pH para conservas.</span></div>
+  <div class="footer-brand"><strong>Moracol</strong><span>Evaluación orientativa de conservas.</span></div>
     <div class="footer-links" aria-label="Información y soporte">
       <a href="mailto:moracolph@gmail.com">Soporte</a>
       <button data-modal="privacy">Privacidad</button>
@@ -234,6 +213,7 @@ La tabla que ya estaba dentro del código se conserva como la tabla de calibraci
 <canvas id="canvas" hidden></canvas>
 
 <script type="module">
+import {METHOD,analyzeRGB,evaluateSample,outcomeLabel} from './moracol-assets/measurement.js';
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js';
 import {
   getAuth, GoogleAuthProvider, createUserWithEmailAndPassword,
@@ -259,13 +239,14 @@ const video=document.getElementById('video');
 const canvas=document.getElementById('canvas');
 const statusEl=document.getElementById('status');
 const resultEl=document.getElementById('result');
-const phEl=document.getElementById('ph');
-const confidenceEl=document.getElementById('confidence');
-const conservaEl=document.getElementById('resultConserva');
+const verdictEl=document.getElementById('verdict');
 const conservaSelect=document.getElementById('conserva');
 let stream=null;
-let facingMode='environment';
 let pendingMeasurement=null;
+let referenceMeasurement=null;
+let referenceContext=null;
+let measurementBusy=false;
+let measurementVersion=0;
 let currentUser=null;
 let selectedPlan=null;
 let guestMode=false;
@@ -280,7 +261,7 @@ const plans={
 const modalCopy={
   help:{
     title:'Ayuda para usar Moracol',
-    content:`<p><strong>Para medir:</strong> iniciá sesión, elegí el tipo de conserva, permití el uso de la cámara y colocá la muestra dentro del recuadro.</p><p>Usá una luz uniforme, evitá reflejos y repetí la captura si la calidad aparece como baja.</p><p>Moracol ofrece una estimación orientativa. Para decisiones de seguridad alimentaria, confirmá el resultado con un medidor de pH calibrado.</p><div class="modal-actions"><a href="mailto:moracolph@gmail.com?subject=Ayuda%20con%20Moracol">Contactar soporte</a></div>`
+    content:`<p><strong>Para medir:</strong> iniciá sesión, elegí el tipo de conserva, permití el uso de la cámara y colocá la muestra dentro del recuadro.</p><p>Usá una luz uniforme, evitá reflejos y mantené la misma iluminación en ambas capturas.</p><p>Moracol compara colores de forma orientativa. Un resultado dentro del rango no certifica la seguridad de una conserva.</p><div class="modal-actions"><a href="mailto:moracolph@gmail.com?subject=Ayuda%20con%20Moracol">Contactar soporte</a></div>`
   },
   report:{
     title:'Reportar un problema',
@@ -466,7 +447,7 @@ async function login(){
 async function signOut(){
   try{await firebaseSignOut(firebaseAuth);}
   catch(error){showToast(friendlyAuthError(error),'error');return;}
-  currentUser=null;guestMode=false;pendingMeasurement=null;resultEl.style.display='none';renderAccount();renderHistory();setView('measure');
+  currentUser=null;guestMode=false;resetMeasurement();renderAccount();renderHistory();setView('measure');
   showToast('Cerraste sesión.','success');
 }
 function choosePlan(planId){
@@ -505,26 +486,7 @@ function startWelcomeSlideshow(){
 function closeWelcome(){document.getElementById('welcomeScreen').classList.add('hidden');document.body.classList.remove('welcome-open');}
 function welcomeToAuth(){closeWelcome();window.setTimeout(openAuth,120);}
 function enterAsGuest(){
-  currentUser=null;guestMode=true;pendingMeasurement=null;closeWelcome();renderAccount();renderHistory();setView('measure');
-}
-
-/*
- * TABLA DE CALIBRACIÓN ORIGINAL DEL CÓDIGO ENTREGADO.
- * Se conserva exactamente con sus cinco puntos.
- */
-const colorTable={
-  3.0:[255,153,0],
-  4.0:[255,204,0],
-  4.5:[204,255,51],
-  5.0:[102,255,102],
-  6.0:[51,204,204]
-};
-
-function populateCalibration(){
-  const body=document.getElementById('calib-body');
-  body.innerHTML=Object.entries(colorTable).map(([ph,rgb])=>
-    `<tr><td>${ph}</td><td>${rgb[0]}</td><td>${rgb[1]}</td><td>${rgb[2]}</td></tr>`
-  ).join('');
+  currentUser=null;guestMode=true;resetMeasurement();closeWelcome();renderAccount();renderHistory();setView('measure');
 }
 
 async function startCamera(){
@@ -532,14 +494,14 @@ async function startCamera(){
   try{
     stream=await navigator.mediaDevices.getUserMedia({
       video:{
-        facingMode:{ideal:facingMode},
+        facingMode:{ideal:'environment'},
         width:{ideal:1280},
         height:{ideal:720}
       },
       audio:false
     });
     video.srcObject=stream;
-    statusEl.textContent='Cámara lista. Coloca la muestra en el recuadro.';
+    statusEl.textContent='Cámara lista.';
   }catch(error){
     console.error(error);
     statusEl.textContent='No se pudo acceder a la cámara. Permite el acceso y asegúrate de usar HTTPS.';
@@ -549,7 +511,7 @@ async function startCamera(){
 function median(values){
   values.sort((a,b)=>a-b);
   const m=Math.floor(values.length/2);
-  return values.length%2?values[m]:Math.round((values[m-1]+values[m])/2);
+  return values.length%2?values[m]:(values[m-1]+values[m])/2;
 }
 
 function representativeColor(imageData){
@@ -560,10 +522,7 @@ function representativeColor(imageData){
     // Elimina extremos para reducir el efecto de sombras/reflejos.
     if(brightness>=35 && brightness<=245) pixels.push([r,g,b]);
   }
-  if(!pixels.length){
-    for(let i=0;i<imageData.data.length;i+=4)
-      pixels.push([imageData.data[i],imageData.data[i+1],imageData.data[i+2]]);
-  }
+  if(pixels.length<imageData.data.length/4*0.1)throw new Error('Captura demasiado oscura o sobreexpuesta. Ajustá la iluminación y volvé a intentar.');
   return [
     median(pixels.map(p=>p[0])),
     median(pixels.map(p=>p[1])),
@@ -571,167 +530,90 @@ function representativeColor(imageData){
   ];
 }
 
-// Convierte el color capturado a HSV. H identifica el tono; S y V ayudan a
-// detectar muestras demasiado apagadas, oscuras o con reflejos.
-function rgbToHSV([r,g,b]){
-  r/=255; g/=255; b/=255;
-  const max=Math.max(r,g,b), min=Math.min(r,g,b), d=max-min;
-  let h=0;
-  if(d){
-    if(max===r) h=60*(((g-b)/d+6)%6);
-    else if(max===g) h=60*((b-r)/d+2);
-    else h=60*((r-g)/d+4);
-  }
-  return {h, s:max===0?0:(d/max)*100, v:max*100};
+function syncCaptureUI(){
+  document.getElementById('capture').textContent=referenceMeasurement?'Capturar muestra':'Capturar indicador';
+  document.querySelector('.guide').dataset.label=referenceMeasurement?'Colocá la muestra aquí':'Colocá el indicador aquí';
+  conservaSelect.disabled=Boolean(referenceMeasurement)||measurementBusy;
 }
-
-// Convierte sRGB a CIE Lab (iluminante D65). En Lab, una distancia Delta E
-// se aproxima mejor a la diferencia que percibe el ojo humano.
-function rgbToLab([r,g,b]){
-  const linear=[r,g,b].map(value=>{
-    value/=255;
-    return value<=0.04045 ? value/12.92 : ((value+0.055)/1.055)**2.4;
-  });
-  const x=(linear[0]*0.4124+linear[1]*0.3576+linear[2]*0.1805)/0.95047;
-  const y=(linear[0]*0.2126+linear[1]*0.7152+linear[2]*0.0722);
-  const z=(linear[0]*0.0193+linear[1]*0.1192+linear[2]*0.9505)/1.08883;
-  const f=value=>value>0.008856 ? Math.cbrt(value) : 7.787*value+16/116;
-  const fx=f(x), fy=f(y), fz=f(z);
-  return {l:116*fy-16, a:500*(fx-fy), b:200*(fy-fz)};
+function resetMeasurement(){
+  measurementVersion++;
+  referenceMeasurement=null;
+  referenceContext=null;
+  pendingMeasurement=null;
+  resultEl.style.display='none';
+  verdictEl.textContent='—';
+  syncCaptureUI();
 }
-
-function deltaE(a,b){
-  return Math.hypot(a.l-b.l,a.a-b.a,a.b-b.b);
+function captureColorData(){
+  // Reproduce el recorte object-fit:cover y el tamaño real del recuadro.
+  const rect=video.getBoundingClientRect();
+  if(!rect.width||!rect.height)throw new Error('La cámara no está visible.');
+  const scale=Math.max(rect.width/video.videoWidth,rect.height/video.videoHeight);
+  const size=Math.max(1,Math.floor(rect.width*0.44/scale));
+  const x=Math.floor((video.videoWidth-size)/2),y=Math.floor((video.videoHeight-size)/2);
+  canvas.width=160;canvas.height=160;
+  const ctx=canvas.getContext('2d',{willReadFrequently:true});
+  ctx.drawImage(video,x,y,size,size,0,0,canvas.width,canvas.height);
+  return analyzeRGB(representativeColor(ctx.getImageData(0,0,canvas.width,canvas.height)));
 }
-
-function hueDifference(a,b){
-  const d=Math.abs(a-b)%360;
-  return Math.min(d,360-d);
-}
-
-function interpolateLab(a,b,t){
-  return {
-    l:a.l+(b.l-a.l)*t,
-    a:a.a+(b.a-a.a)*t,
-    b:a.b+(b.b-a.b)*t
-  };
-}
-
-function interpolateHue(a,b,t){
-  const change=((b-a+540)%360)-180;
-  return (a+change*t+360)%360;
-}
-
-function estimatePH(rgb){
-  const lab=rgbToLab(rgb);
-  const hsv=rgbToHSV(rgb);
-  const references=Object.entries(colorTable)
-    .map(([ph,ref])=>({ph:Number(ph),rgb:ref,lab:rgbToLab(ref),hsv:rgbToHSV(ref)}))
-    .sort((a,b)=>a.ph-b.ph);
-  let best=null;
-
-  // Busca el tramo de calibración cuya línea Lab queda más cerca del color
-  // observado y calcula su posición entre los dos pH conocidos.
-  for(let i=0;i<references.length-1;i++){
-    const first=references[i], second=references[i+1];
-    const vector={l:second.lab.l-first.lab.l,a:second.lab.a-first.lab.a,b:second.lab.b-first.lab.b};
-    const fromFirst={l:lab.l-first.lab.l,a:lab.a-first.lab.a,b:lab.b-first.lab.b};
-    const lengthSquared=vector.l**2+vector.a**2+vector.b**2;
-    const t=Math.max(0,Math.min(1,(fromFirst.l*vector.l+fromFirst.a*vector.a+fromFirst.b*vector.b)/lengthSquared));
-    const projectedLab=interpolateLab(first.lab,second.lab,t);
-    const expectedHue=interpolateHue(first.hsv.h,second.hsv.h,t);
-    const labDistance=deltaE(lab,projectedLab);
-    const hDistance=hueDifference(hsv.h,expectedHue);
-    // Lab es la comparación principal; HSV controla que el tono acompañe.
-    const score=labDistance+hDistance*0.25*Math.min(hsv.s,first.hsv.s,second.hsv.s)/100;
-    if(!best || score<best.score){
-      best={
-        ph:first.ph+(second.ph-first.ph)*t,
-        score,
-        labDistance,
-        hDistance,
-        reference:t<0.5?first.rgb:second.rgb
-      };
-    }
-  }
-
-  const labDistance=best.labDistance;
-  const hDistance=best.hDistance;
-  let confidence='Aceptable';
-  if(hsv.s<20 || hsv.v<20 || hsv.v>95 || labDistance>35) confidence='Baja — repite la foto';
-  else if(labDistance>20) confidence='Media';
-  return {ph:best.ph,lab,hsv,distance:labDistance,hueDistance:hDistance,reference:best.reference,confidence};
-}
-
 async function captureMeasurement(){
+  if(measurementBusy)return;
   const captureButton=document.getElementById('capture');
-  const access=accessState();
-  if(!access.allowed){
-    showToast(access.message,'error');
-    setView('plans');
-    return;
+  if(referenceContext&&referenceContext.userId!==currentUser?.id)resetMeasurement();
+  if(!referenceMeasurement){
+    const access=accessState();
+    if(!access.allowed){showToast(access.message,'error');setView(currentUser?'plans':'account');return;}
   }
-  if(!video.videoWidth){
-    showToast('La cámara todavía no está lista.','error');
-    return;
-  }
-
+  if(!video.videoWidth||video.readyState<2){showToast('La cámara todavía no está lista.','error');return;}
+  const conserva=conservaSelect.value.trim();
+  if(!conserva||conserva.length>100){showToast('Escribí un nombre de conserva de hasta 100 caracteres.','error');return;}
+  const version=measurementVersion,userId=currentUser?.id;
+  measurementBusy=true;
+  setButtonBusy(captureButton,true,referenceMeasurement?'Analizando muestra…':'Analizando indicador…');
+  conservaSelect.disabled=true;
   try{
-    setButtonBusy(captureButton,true,'Midiendo…');
-    const remoteAccess=await apiRequest('access/consume',{method:'POST'});
-    if(remoteAccess.freeConsumed){currentUser.freeMeasurementUsed=true;renderAccount();}
-  }catch(error){
-    showToast(error.message,'error');
-    setView('plans');
-    setButtonBusy(captureButton,false);
-    return;
-  }
-
-  try{
-    canvas.width=video.videoWidth;
-    canvas.height=video.videoHeight;
-    const ctx=canvas.getContext('2d',{willReadFrequently:true});
-    ctx.drawImage(video,0,0,canvas.width,canvas.height);
-
-  // Área central correspondiente al recuadro.
-  const size=Math.floor(Math.min(canvas.width,canvas.height)*0.44);
-  const x=Math.floor((canvas.width-size)/2);
-  const y=Math.floor((canvas.height-size)/2);
-
-  const imageData=ctx.getImageData(x,y,size,size);
-  const rgb=representativeColor(imageData);
-  const result=estimatePH(rgb);
-
-  pendingMeasurement={
-    id:crypto.randomUUID(),
-    conserva:conservaSelect.value,
-    ph:result.ph,
-    hsv:result.hsv,
-    lab:result.lab,
-    reference:result.reference,
-    distance:result.distance,
-    hueDistance:result.hueDistance,
-    confidence:result.confidence,
-    timestamp:new Date().toISOString()
-  };
-
-  phEl.textContent=result.ph.toFixed(1);
-  confidenceEl.textContent=result.confidence;
-  conservaEl.textContent=conservaSelect.value;
+    const capture=captureColorData();
+    if(!referenceMeasurement){
+      // Una evaluación (dos fotos) consume una sola medición disponible.
+      const remoteAccess=await apiRequest('access/consume',{method:'POST'});
+      if(version!==measurementVersion||userId!==currentUser?.id)return;
+      if(!remoteAccess.allowed)throw new Error('No tenés mediciones disponibles.');
+      referenceMeasurement=capture;
+      referenceContext={userId,conserva};
+      pendingMeasurement=null;
+      resultEl.style.display='none';
+      if(remoteAccess.freeConsumed){currentUser.freeMeasurementUsed=true;renderAccount();}
+      statusEl.textContent='Indicador registrado. Ahora capturá la muestra.';
+      showToast('Indicador registrado.','success');
+      return;
+    }
+    const evaluation=evaluateSample(referenceMeasurement,capture);
+    pendingMeasurement={
+      id:crypto.randomUUID(),method:METHOD,userId,
+      conserva:referenceContext.conserva,
+      indicator:referenceMeasurement,sample:capture,
+      withinRange:evaluation.withinRange,variation:evaluation.variation,
+      timestamp:new Date().toISOString()
+    };
+    verdictEl.textContent=outcomeLabel(evaluation.withinRange);
+    verdictEl.style.color=evaluation.withinRange?'var(--ok)':'var(--danger)';
     resultEl.style.display='block';
     resultEl.scrollIntoView({behavior:'smooth',block:'center'});
-    showToast('Medición completada. Revisá el resultado.','success');
+    statusEl.textContent='Comparación completada.';
+    referenceMeasurement=null;referenceContext=null;
+    showToast('Comparación completada.','success');
   }catch(error){
-    console.error(error);
-    showToast('No se pudo procesar la imagen. Intentá nuevamente.','error');
+    showToast(error.message||'No se pudo procesar la imagen. Intentá nuevamente.','error');
   }finally{
+    measurementBusy=false;
     setButtonBusy(captureButton,false);
+    syncCaptureUI();
   }
 }
 
 async function saveMeasurement(){
   if(!pendingMeasurement)return;
-  if(!currentUser){showToast('Iniciá sesión para guardar la medición.','error');return;}
+  if(!currentUser||pendingMeasurement.userId!==currentUser.id){showToast('Iniciá sesión con la cuenta que realizó la medición.','error');return;}
   const button=document.getElementById('save');
   try{
     setButtonBusy(button,true,'Guardando…');
@@ -773,8 +655,8 @@ function renderHistory(){
   }
   box.innerHTML=cloudHistory.map(item=>`
     <div class="history-item">
-      <div class="history-title">${escapeHTML(item.conserva)} — pH ${Number(item.ph).toFixed(1)}</div>
-      <div class="history-meta">${item.lab ? `Lab(${item.lab.l.toFixed(1)}, ${item.lab.a.toFixed(1)}, ${item.lab.b.toFixed(1)}) · ΔE ${Number(item.distance).toFixed(1)} · ${escapeHTML(item.confidence||'Sin evaluar')}` : `RGB(${item.rgb.join(', ')}) · Distancia ${Number(item.distance).toFixed(1)}`} · ${formatDate(item.timestamp)}</div>
+      <div class="history-title">${escapeHTML(item.conserva)} — ${escapeHTML(item.method===METHOD?outcomeLabel(item.withinRange):'Medición anterior')}</div>
+      <div class="history-meta">${formatDate(item.timestamp)}</div>
     </div>
   `).join('');
 }
@@ -787,10 +669,6 @@ function escapeHTML(value){
 
 document.getElementById('capture').addEventListener('click',captureMeasurement);
 document.getElementById('save').addEventListener('click',saveMeasurement);
-document.getElementById('switch').addEventListener('click',()=>{
-  facingMode=facingMode==='environment'?'user':'environment';
-  startCamera();
-});
 document.getElementById('clearHistory').addEventListener('click',async()=>{
   if(!currentUser)return;
   if(confirm('¿Seguro que quieres borrar todo el historial?')){
@@ -821,6 +699,8 @@ document.getElementById('infoModal').addEventListener('click',event=>{if(event.t
 document.addEventListener('keydown',event=>{if(event.key==='Escape')closeModal();});
 
 onAuthStateChanged(firebaseAuth,async firebaseUser=>{
+  if((referenceContext?.userId||pendingMeasurement?.userId)&&
+    (referenceContext?.userId||pendingMeasurement?.userId)!==firebaseUser?.uid)resetMeasurement();
   if(firebaseUser){
     currentUser=userFromFirebase(firebaseUser);guestMode=false;renderAccount();
     try{await syncAccount();}catch(error){document.getElementById('history').innerHTML=`<p class="empty">${escapeHTML(error.message)}</p>`;}
@@ -829,7 +709,6 @@ onAuthStateChanged(firebaseAuth,async firebaseUser=>{
   }
 });
 startWelcomeSlideshow();
-populateCalibration();
 renderAccount();
 renderHistory();
 setView('measure');
@@ -837,5 +716,3 @@ startCamera();
 </script>
 </body>
 </html>
-
-
