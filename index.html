@@ -144,14 +144,15 @@ details summary{cursor:pointer;font-weight:bold}
 </section>
 
 <section id="planes" class="card app-view plans-view">
-  <div class="account-summary"><h2 style="margin:0">Elegí tu plan</h2><span class="soon-badge">Próximamente</span></div>
-  <p class="note">La cuenta gratuita incluye 1 medición. Podés cancelar cuando quieras: conservás el acceso ilimitado hasta el final del período ya abonado y no se realizan reembolsos por períodos iniciados.</p>
+  <div class="account-summary"><h2 style="margin:0">Elegí tu plan</h2><span id="paymentsBadge" class="soon-badge">Pago único</span></div>
+  <p class="note">La cuenta gratuita incluye 1 medición. Los planes se pagan una sola vez, sin renovación ni débito automático. Al vencer, deberás volver a pagar para seguir midiendo.</p>
   <div class="plans" style="margin-top:14px">
-    <article class="plan"><span class="soon-badge">En preparación</span><h3>Plus</h3><div class="price">$2.000</div><div class="period">ARS · por semana</div><ul><li>Mediciones ilimitadas</li><li>Historial en la nube</li><li>Acceso por 7 días</li></ul><button data-plan="plus" disabled>Próximamente</button></article>
-    <article class="plan featured"><span class="soon-badge">Recomendado</span><h3>Pro</h3><div class="price">$6.000</div><div class="period">ARS · por mes</div><ul><li>Mediciones ilimitadas</li><li>Historial en la nube</li><li>Acceso por 1 mes</li></ul><button data-plan="pro" disabled>Próximamente</button></article>
-    <article class="plan"><span class="soon-badge">En preparación</span><h3>Anual</h3><div class="price">$60.000</div><div class="period">ARS · por año</div><ul><li>Mediciones ilimitadas</li><li>Historial en la nube</li><li>Acceso por 1 año</li></ul><button data-plan="annual" disabled>Próximamente</button></article>
+    <article class="plan"><span class="soon-badge">Pago único</span><h3>Plus</h3><div class="price">$2.000</div><div class="period">ARS · pago único · 7 días</div><ul><li>Mediciones ilimitadas</li><li>Historial en la nube</li><li>Acceso por 7 días</li></ul><button data-plan="plus" disabled>Cobros no habilitados</button></article>
+    <article class="plan featured"><span class="soon-badge">Recomendado</span><h3>Pro</h3><div class="price">$6.000</div><div class="period">ARS · pago único · 30 días</div><ul><li>Mediciones ilimitadas</li><li>Historial en la nube</li><li>Acceso por 30 días</li></ul><button data-plan="pro" disabled>Cobros no habilitados</button></article>
+    <article class="plan"><span class="soon-badge">Pago único</span><h3>Anual</h3><div class="price">$60.000</div><div class="period">ARS · pago único · 365 días</div><ul><li>Mediciones ilimitadas</li><li>Historial en la nube</li><li>Acceso por 365 días</li></ul><button data-plan="annual" disabled>Cobros no habilitados</button></article>
   </div>
-  <div id="paymentMessage" class="notice" style="margin-top:13px">Los cobros todavía no están habilitados. Estamos preparando una conexión segura con Mercado Pago.</div>
+  <button id="refreshPayment" type="button" hidden style="margin-top:13px">Actualizar estado del pago</button>
+  <div id="paymentMessage" class="notice" style="margin-top:13px">Los cobros todavía no están habilitados. Se activarán después de configurar y probar Mercado Pago.</div>
 </section>
 
 <section id="medir" class="card app-view measure-view">
@@ -249,6 +250,9 @@ let measurementBusy=false;
 let measurementVersion=0;
 let currentUser=null;
 let selectedPlan=null;
+let billingConfig={enabled:false,mode:'test'};
+let checkoutBusy=false;
+let paymentReturnBusy=false;
 let guestMode=false;
 let cloudHistory=[];
 
@@ -351,6 +355,7 @@ async function syncAccount(){
   currentUser=profile;
   renderAccount();
   await loadHistory();
+  await checkPaymentReturn();
 }
 function activePlan(){
   return currentUser?.subscription && new Date(currentUser.subscription.endsAt)>new Date()
@@ -450,14 +455,74 @@ async function signOut(){
   currentUser=null;guestMode=false;resetMeasurement();renderAccount();renderHistory();setView('measure');
   showToast('Cerraste sesión.','success');
 }
-function choosePlan(planId){
-  if(!currentUser){showToast('Primero creá una cuenta o iniciá sesión para elegir un plan.','error');openAuth();return;}
-  selectedPlan=plans[planId];
-  const message=document.getElementById('paymentMessage');
-  message.style.display='block';
-  message.innerHTML=`Elegiste <strong>${selectedPlan.name}</strong>: $${selectedPlan.amount.toLocaleString('es-AR')} ARS por ${selectedPlan.label}. El cobro se habilitará cuando conectemos la cuenta de Mercado Pago del profesor.`;
-  message.scrollIntoView({behavior:'smooth',block:'center'});
+function updatePaymentButtons(){
+  document.querySelectorAll('[data-plan]').forEach(button=>{
+    button.disabled=!billingConfig.enabled||checkoutBusy;
+    button.textContent=checkoutBusy?'Preparando pago…':billingConfig.enabled?(billingConfig.mode==='test'?'Probar pago':'Pagar con Mercado Pago'):'Cobros no habilitados';
+  });
 }
+async function loadPaymentConfig(){
+  try{
+    const response=await fetch('/api/payments/config',{cache:'no-store'});
+    if(!response.ok)throw new Error();
+    const config=await response.json();
+    billingConfig={enabled:config.enabled===true,mode:config.mode==='live'?'live':'test'};
+  }catch{billingConfig={enabled:false,mode:'test'};}
+  updatePaymentButtons();
+  if(billingConfig.enabled){
+    document.getElementById('paymentsBadge').textContent=billingConfig.mode==='test'?'Modo de prueba':'Pago único';
+    document.getElementById('paymentMessage').textContent=billingConfig.mode==='test'
+      ?'Prueba de Mercado Pago: disponible solo para la cuenta de prueba autorizada. No uses tarjetas reales.'
+      :'El pago se realiza en Mercado Pago. El acceso se activa cuando el servidor confirma el pago aprobado.';
+  }
+}
+async function choosePlan(planId){
+  if(checkoutBusy||!billingConfig.enabled||!plans[planId])return;
+  if(!currentUser){showToast('Primero creá una cuenta o iniciá sesión para elegir un plan.','error');openAuth();return;}
+  if(activePlan()){showToast('Tu plan todavía está activo. Podrás renovarlo cuando venza.','info');return;}
+  selectedPlan=plans[planId];
+  const confirmation=`Plan ${selectedPlan.name}: $${selectedPlan.amount.toLocaleString('es-AR')} ARS, ${selectedPlan.days} días. Pago único, sin renovación automática. ${billingConfig.mode==='test'?'MODO DE PRUEBA. ':''}¿Continuar a Mercado Pago?`;
+  if(!window.confirm(confirmation))return;
+  checkoutBusy=true;updatePaymentButtons();
+  const message=document.getElementById('paymentMessage');
+  try{
+    const result=await apiRequest('payments/checkout',{method:'POST',body:JSON.stringify({planId})});
+    const url=new URL(result.checkoutUrl);
+    if(url.protocol!=='https:'||!['www.mercadopago.com.ar','sandbox.mercadopago.com.ar'].includes(url.hostname)||url.username||url.password||url.port)throw new Error('Enlace de pago no válido.');
+    message.textContent='Abriendo Mercado Pago…';
+    window.location.assign(url.href);
+  }catch(error){message.textContent=error.message;showToast(error.message,'error');}
+  finally{checkoutBusy=false;updatePaymentButtons();}
+}
+function paymentReturn(){
+  const params=new URLSearchParams(window.location.search);
+  const orderId=params.get('billing_order');
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId||''))return null;
+  const value=params.get('payment_id')||params.get('collection_id');
+  return {orderId,paymentId:/^[1-9][0-9]{0,24}$/.test(value||'')?value:undefined};
+}
+async function checkPaymentReturn(){
+  const pending=paymentReturn();
+  if(!pending||!currentUser||paymentReturnBusy)return;
+  paymentReturnBusy=true;
+  const message=document.getElementById('paymentMessage'),refresh=document.getElementById('refreshPayment');
+  setView('plans');message.textContent='Verificando el pago con Mercado Pago…';
+  try{
+    const order=await apiRequest('payments/reconcile',{method:'POST',body:JSON.stringify(pending)});
+    // Nunca se confía en status/collection_status enviados en la URL.
+    const messages={approved:'Pago confirmado. Tu plan está activo.',pending:'El pago todavía no está confirmado. Podés actualizar su estado.',in_process:'Mercado Pago está procesando el pago.',in_mediation:'El pago está en revisión.',rejected:'El pago fue rechazado. No se activó el plan.',cancelled:'El pago fue cancelado. No se activó el plan.',revoked:'El pago fue revertido. Ese acceso ya no está activo.'};
+    message.textContent=messages[order.status]||'No se confirmó el pago.';
+    refresh.hidden=!['pending','in_process','in_mediation'].includes(order.status);
+    if(order.status==='approved'){
+      currentUser=await apiRequest('me');renderAccount();
+      const clean=new URL(window.location.href);
+      ['billing_order','payment_id','collection_id','status','collection_status','preference_id','external_reference','merchant_order_id','payment_type','site_id','processing_mode','merchant_account_id'].forEach(key=>clean.searchParams.delete(key));
+      window.history.replaceState({},'',clean.pathname+clean.search+clean.hash);
+    }
+  }catch(error){message.textContent=error.message;refresh.hidden=false;}
+  finally{paymentReturnBusy=false;}
+}
+
 async function signInWithGoogle(){
   const buttons=[document.getElementById('googleButton'),document.getElementById('welcomeGoogle')];
   try{
@@ -689,6 +754,8 @@ document.getElementById('registerButton').addEventListener('click',register);
 document.getElementById('loginButton').addEventListener('click',login);
 document.getElementById('googleButton').addEventListener('click',signInWithGoogle);
 document.querySelectorAll('[data-plan]').forEach(button=>button.addEventListener('click',()=>choosePlan(button.dataset.plan)));
+document.getElementById('refreshPayment').addEventListener('click',checkPaymentReturn);
+loadPaymentConfig();
 document.getElementById('welcomeCreate').addEventListener('click',welcomeToAuth);
 document.getElementById('welcomeLogin').addEventListener('click',welcomeToAuth);
 document.getElementById('welcomeGuest').addEventListener('click',enterAsGuest);

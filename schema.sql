@@ -79,3 +79,16 @@ CREATE TABLE IF NOT EXISTS payment_events (
   payload_json TEXT NOT NULL,
   processed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Pagos únicos, sin modificar tablas ni datos existentes.
+CREATE TABLE IF NOT EXISTS billing_orders (
+  id TEXT PRIMARY KEY, firebase_uid TEXT NOT NULL,
+  plan_id TEXT NOT NULL CHECK(plan_id IN ('plus','pro','annual')),
+  amount INTEGER NOT NULL, currency TEXT NOT NULL DEFAULT 'ARS', days INTEGER NOT NULL,
+  mode TEXT NOT NULL CHECK(mode IN ('test','live')),
+  status TEXT NOT NULL DEFAULT 'pending', preference_id TEXT,
+  winning_payment_id TEXT UNIQUE, latest_payment_id TEXT,
+  provider_updated_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+  FOREIGN KEY(firebase_uid) REFERENCES users(firebase_uid) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_billing_owner ON billing_orders(firebase_uid,created_at DESC);

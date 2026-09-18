@@ -39,8 +39,7 @@ const DB={
   async batch(statements){sqlite.exec('BEGIN');try{const r=[];for(const s of statements)r.push(await s.run());sqlite.exec('COMMIT');return r;}catch(e){sqlite.exec('ROLLBACK');throw e;}}
 };
 globalThis.fetch=async()=>Response.json({users:[{localId:'user-a',email:'test@example.com'}]});
-const apiSource=fs.readFileSync(new URL('../functions/api/[[path]].js',import.meta.url),'utf8').replace('../../moracol-assets/measurement.js',new URL('../moracol-assets/measurement.js',import.meta.url).href);
-const {onRequest}=await import('data:text/javascript;base64,'+Buffer.from(apiSource).toString('base64'));
+const {onRequest}=await import('../functions/api/[[path]].js');
 async function request(method,path,body){return onRequest({env:{DB},params:{path:path.split('/')},request:new Request('https://test.example/api/'+path,{method,headers:{Authorization:'Bearer test','Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})})});}
 let response=await request('POST','measurements',{id:'12345678-1234-1234-1234-123456789012',method:METHOD,conserva:'Test',indicator:{rgb:ref.rgb},sample:{rgb:ref.rgb},withinRange:false});
 check(response.status===201,'Guardado nuevo sin pH');
@@ -71,11 +70,11 @@ canvas.getContext=()=>({drawImage(){},getImageData(){const data=new Uint8Clamped
 let consumes=0,delay=null;
 const context=vm.createContext({...measurement,console,crypto,Date,Number,Object,Array,String,Math,JSON,Error,Uint8ClampedArray,
   document:{getElementById:element,querySelector:()=>element('guide'),querySelectorAll:()=>[],body:{classList:{add(){},remove(){}}},documentElement:{dataset:{},setAttribute(){}},addEventListener(){}},
-  window:{matchMedia:()=>({matches:false,addEventListener(){}}),setInterval(){},setTimeout(){},scrollTo(){}},
+  window:{location:{search:'',href:'https://test.example/'},matchMedia:()=>({matches:false,addEventListener(){}}),setInterval(){},setTimeout(){},scrollTo(){}},URL,URLSearchParams,
   localStorage:{getItem(){return null;},setItem(){}},navigator:{mediaDevices:{async getUserMedia(){return {getTracks(){return [];}};}}},
   initializeApp(){return {};},getAuth(){return {currentUser:{getIdToken:async()=> 'mock'}};},GoogleAuthProvider:class {},onAuthStateChanged(){},
   fetch:async url=>{if(url==='/api/access/consume'){consumes++;if(delay)await delay;return {ok:true,json:async()=>({allowed:true,freeConsumed:true})};}return {ok:true,json:async()=>({})};}});
-new vm.Script(script+`\nglobalThis.testUI={captureMeasurement,resetMeasurement,state:()=>({referenceMeasurement,pendingMeasurement,measurementBusy}),setUser:(id)=>{currentUser={id,name:'Test',freeMeasurementUsed:false,hasHadSubscription:false};}};`).runInContext(context);
+new vm.Script(script+`\nglobalThis.testUI={captureMeasurement,resetMeasurement,choosePlan,checkPaymentReturn,state:()=>({referenceMeasurement,pendingMeasurement,measurementBusy,currentUser}),setBilling:(config)=>{billingConfig=config;},setUser:(id)=>{currentUser={id,name:'Test',freeMeasurementUsed:false,hasHadSubscription:false};}};`).runInContext(context);
 context.testUI.setUser('user-a');
 unusable=true;await context.testUI.captureMeasurement();check(consumes===0,'Captura inválida no consume crédito');unusable=false;
 let release;delay=new Promise(resolve=>{release=resolve;});
@@ -92,4 +91,32 @@ check(element('capture').textContent==='Capturar indicador','Botón reinicia');
 context.testUI.setUser('user-a');await context.testUI.captureMeasurement();captureRGB=[170,140,160];await context.testUI.captureMeasurement();
 check(element('verdict').textContent==='Fuera del rango','Resultado fuera');
 context.testUI.resetMeasurement();check(!context.testUI.state().pendingMeasurement,'Cambio de cuenta borra resultado pendiente');
+// Cobros: evitar doble clic y jamás confiar en un status aprobado en la URL.
+let checkoutCalls=0,redirects=0,checkoutRelease;
+context.window.confirm=()=>true;
+context.window.location.assign=()=>{redirects++;};
+context.testUI.setBilling({enabled:true,mode:'test'});
+context.fetch=async url=>{
+  if(url==='/api/payments/checkout'){
+    checkoutCalls++;await new Promise(resolve=>{checkoutRelease=resolve;});
+    return {ok:true,json:async()=>({checkoutUrl:'https://sandbox.mercadopago.com.ar/checkout/v1/redirect?pref_id=test'})};
+  }
+  return {ok:true,json:async()=>({})};
+};
+const checkoutPromise=context.testUI.choosePlan('pro');
+await Promise.resolve();await Promise.resolve();
+await context.testUI.choosePlan('pro');
+check(checkoutCalls===1,'Doble clic de pago crea solo una orden');
+checkoutRelease();await checkoutPromise;
+check(redirects===1,'Una única redirección a Mercado Pago');
+context.window.location.search='?billing_order=12345678-1234-1234-1234-123456789012&payment_id=111&status=approved';
+let refreshes=0;
+context.fetch=async url=>{if(url==='/api/me')refreshes++;return {ok:true,json:async()=>({status:'pending'})};};
+await context.testUI.checkPaymentReturn();
+check(element('paymentMessage').textContent.includes('todavía no está confirmado'),'Aprobado falso en URL no se muestra como pago');
+check(refreshes===0&&!context.testUI.state().currentUser.subscription,'Pago pendiente no activa plan en interfaz');
+check(!element('refreshPayment').hidden,'Pendiente permite actualizar estado');
+context.testUI.setBilling({enabled:false,mode:'test'});
+await context.testUI.choosePlan('pro');
+check(checkoutCalls===1,'Cobros deshabilitados no crean órdenes');
 console.log(`${checks} verificaciones correctas: límites, conversiones, API e interfaz.`);

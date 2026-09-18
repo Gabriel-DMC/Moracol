@@ -1,4 +1,5 @@
 import {METHOD,analyzeRGB,evaluateSample} from '../../moracol-assets/measurement.js';
+import {BillingError,paymentConfig,boundedJson,checkout,getOrder,reconcile,webhook} from '../../lib/billing.js';
 
 const FIREBASE_API_KEY = 'AIzaSyB3LZHkENqVw0ckjaWaseeO2QParuhEfBM';
 const MAX_BODY_BYTES = 16 * 1024;
@@ -21,13 +22,7 @@ function response(data, status = 200) {
 }
 
 async function readJson(request) {
-  const length = Number(request.headers.get('content-length') || 0);
-  if (length > MAX_BODY_BYTES) throw new HttpError(413, 'Solicitud demasiado grande.');
-  try {
-    return await request.json();
-  } catch {
-    throw new HttpError(400, 'El contenido enviado no es válido.');
-  }
+  return boundedJson(request,MAX_BODY_BYTES);
 }
 
 async function authenticate(request) {
@@ -157,6 +152,9 @@ function validateComparison(body) {
 }
 
 async function route(request, env, identity, path) {
+  if(request.method==='POST'&&path==='payments/checkout')return response(await checkout(request,env,identity,await readJson(request)),201);
+  if(request.method==='GET'&&path==='payments/order')return response(await getOrder(env,identity,new URL(request.url).searchParams.get('id')));
+  if(request.method==='POST'&&path==='payments/reconcile')return response(await reconcile(env,identity,await readJson(request)));
   if (request.method === 'GET' && path === 'me') {
     return response(await getProfile(env.DB, identity));
   }
@@ -254,6 +252,8 @@ export async function onRequest(context) {
     ? context.params.path.join('/')
     : String(context.params.path || '');
   try {
+    if(context.request.method==='GET'&&path==='payments/config')return response(paymentConfig(context.env,context.request));
+    if(context.request.method==='POST'&&path==='payments/webhook')return response(await webhook(context.request,context.env));
     if (context.request.method === 'GET' && path === 'health') {
       await context.env.DB.prepare('SELECT 1 AS connected').first();
       return response({ok: true, database: 'connected'});
@@ -262,7 +262,7 @@ export async function onRequest(context) {
     await ensureUser(context.env.DB, identity);
     return await route(context.request, context.env, identity, path);
   } catch (error) {
-    const status = error instanceof HttpError ? error.status : 500;
+    const status = error instanceof HttpError || error instanceof BillingError ? error.status : 500;
     if (status === 500) {
       console.error(JSON.stringify({message: 'api_request_failed', path, error: error instanceof Error ? error.message : String(error)}));
     }
