@@ -1,3 +1,4 @@
+import {EXHIBITION_MODE} from '../../moracol-assets/exhibition.js';
 import {METHOD,analyzeRGB,evaluateSample} from '../../moracol-assets/measurement.js';
 import {BillingError,paymentConfig,boundedJson,checkout,getOrder,reconcile,webhook} from '../../lib/billing.js';
 
@@ -252,7 +253,12 @@ export async function onRequest(context) {
     ? context.params.path.join('/')
     : String(context.params.path || '');
   try {
-    if(context.request.method==='GET'&&path==='payments/config')return response(paymentConfig(context.env,context.request));
+    if(context.request.method==='GET'&&path==='payments/config')return response({...paymentConfig(context.env,context.request),...(EXHIBITION_MODE?{enabled:false,exhibitionMode:true}:{})});
+    // Acceso público de exposición: sin consumir créditos ni escribir en D1.
+    if(EXHIBITION_MODE&&context.request.method==='POST'&&path==='access/consume')
+      return response({allowed:true,unlimited:true,exhibitionMode:true});
+    if(EXHIBITION_MODE&&context.request.method==='POST'&&path==='payments/checkout')
+      return response({error:'Los pagos están suspendidos durante la exposición. Podés medir gratis y sin límites.'},503);
     if(context.request.method==='POST'&&path==='payments/webhook')return response(await webhook(context.request,context.env));
     if (context.request.method === 'GET' && path === 'health') {
       await context.env.DB.prepare('SELECT 1 AS connected').first();

@@ -53,7 +53,8 @@ check(response.status===400,'Rechaza RGB inválido');
 response=await request('GET','measurements');
 check((await response.json()).measurements[0].withinRange,'Historial devuelve veredicto');
 response=await request('POST','access/consume');check(response.status===200,'Primer acceso gratuito');
-response=await request('POST','access/consume');check(response.status===403,'No consume crédito dos veces');
+response=await request('POST','access/consume');check(response.status===200,'Exposición permite repetir sin límite');
+check(sqlite.prepare("SELECT free_measurement_used FROM users WHERE firebase_uid='user-a'").get().free_measurement_used===0,'Exposición no consume prueba gratuita');
 response=await request('DELETE','measurements');check(response.status===200,'Borrado compatible');
 check(sqlite.prepare('SELECT count(*) AS n FROM comparison_measurements').get().n===0,'Borra comparaciones');
 
@@ -68,13 +69,13 @@ const video=element('video');Object.assign(video,{videoWidth:1280,videoHeight:72
 const canvas=element('canvas');let captureRGB=ref.rgb,unusable=false;
 canvas.getContext=()=>({drawImage(){},getImageData(){const data=new Uint8ClampedArray(160*160*4);for(let i=0;i<data.length;i+=4){data.set(unusable?[0,0,0,255]:[...captureRGB.map(Math.round),255],i);}return {data};}});
 let consumes=0,delay=null;
-const context=vm.createContext({...measurement,console,crypto,Date,Number,Object,Array,String,Math,JSON,Error,Uint8ClampedArray,
+const context=vm.createContext({EXHIBITION_MODE:false,...measurement,console,crypto,Date,Number,Object,Array,String,Math,JSON,Error,Uint8ClampedArray,
   document:{getElementById:element,querySelector:()=>element('guide'),querySelectorAll:()=>[],body:{classList:{add(){},remove(){}}},documentElement:{dataset:{},setAttribute(){}},addEventListener(){}},
   window:{location:{search:'',href:'https://test.example/'},matchMedia:()=>({matches:false,addEventListener(){}}),setInterval(){},setTimeout(){},scrollTo(){}},URL,URLSearchParams,
   localStorage:{getItem(){return null;},setItem(){}},navigator:{mediaDevices:{async getUserMedia(){return {getTracks(){return [];}};}}},
   initializeApp(){return {};},getAuth(){return {currentUser:{getIdToken:async()=> 'mock'}};},GoogleAuthProvider:class {},onAuthStateChanged(){},
   fetch:async url=>{if(url==='/api/access/consume'){consumes++;if(delay)await delay;return {ok:true,json:async()=>({allowed:true,freeConsumed:true})};}return {ok:true,json:async()=>({})};}});
-new vm.Script(script+`\nglobalThis.testUI={captureMeasurement,resetMeasurement,choosePlan,checkPaymentReturn,state:()=>({referenceMeasurement,pendingMeasurement,measurementBusy,currentUser}),setBilling:(config)=>{billingConfig=config;},setUser:(id)=>{currentUser={id,name:'Test',freeMeasurementUsed:false,hasHadSubscription:false};}};`).runInContext(context);
+new vm.Script(script+`\nglobalThis.testUI={captureMeasurement,resetMeasurement,choosePlan,checkPaymentReturn,state:()=>({referenceMeasurement,pendingMeasurement,measurementBusy,currentUser}),setBilling:(config)=>{billingConfig=config;},setUser:(id)=>{currentUser=id?{id,name:'Test',freeMeasurementUsed:false,hasHadSubscription:false}:null;}};`).runInContext(context);
 context.testUI.setUser('user-a');
 unusable=true;await context.testUI.captureMeasurement();check(consumes===0,'Captura inválida no consume crédito');unusable=false;
 let release;delay=new Promise(resolve=>{release=resolve;});
@@ -119,4 +120,21 @@ check(!element('refreshPayment').hidden,'Pendiente permite actualizar estado');
 context.testUI.setBilling({enabled:false,mode:'test'});
 await context.testUI.choosePlan('pro');
 check(checkoutCalls===1,'Cobros deshabilitados no crean órdenes');
+// Modo de exposición real: invitados y cuentas sin créditos pueden repetir.
+context.EXHIBITION_MODE=true;
+const previousConsumes=consumes;
+context.testUI.setUser(null);
+for(let i=0;i<3;i++){
+  await context.testUI.captureMeasurement();await context.testUI.captureMeasurement();
+  check(Boolean(context.testUI.state().pendingMeasurement),'Invitado completa evaluación '+i);
+}
+context.testUI.setUser('exhausted');
+context.testUI.state().currentUser.freeMeasurementUsed=true;
+context.testUI.state().currentUser.hasHadSubscription=true;
+await context.testUI.captureMeasurement();await context.testUI.captureMeasurement();
+check(Boolean(context.testUI.state().pendingMeasurement),'Cuenta agotada puede medir');
+check(consumes===previousConsumes,'Exposición no solicita consumo de créditos');
+context.testUI.setBilling({enabled:true,mode:'live'});
+await context.testUI.choosePlan('pro');
+check(checkoutCalls===1,'Exposición bloquea checkout incluso con configuración habilitada');
 console.log(`${checks} verificaciones correctas: límites, conversiones, API e interfaz.`);

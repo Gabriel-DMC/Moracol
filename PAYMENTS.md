@@ -1,3 +1,16 @@
+# Exposición: acceso gratuito temporal
+
+`moracol-assets/exhibition.js` activa `EXHIBITION_MODE=true`, compartido por la interfaz y la API. No tiene fecha de finalización automática. Mantenerlo activo hasta que el responsable solicite retomar los medios de pago.
+
+- Invitados y cuentas registradas pueden medir sin límites, incluso con la prueba gratuita agotada o un plan vencido.
+- No se consumen créditos ni se modifican suscripciones para conceder este acceso.
+- Los invitados ven los resultados sin cuenta; el historial en la nube sigue requiriendo autenticación.
+- La API bloquea nuevos pagos aunque las variables de Cloudflare habiliten cobros. Las notificaciones de pagos previos permanecen disponibles.
+- Antes de retomar pagos, revisar las reglas comerciales con el responsable y restaurar los textos de Planes y bienvenida. Cambiar la bandera no constituye autorización para cobrar.
+- Pruebas: `node tests/measurement.mjs`, `node tests/billing.mjs`, `node tests/exhibition.mjs`.
+
+La documentación siguiente describe la integración anterior, que queda suspendida durante la exposición.
+
 # Mercado Pago Argentina: pagos únicos
 
 Plus: ARS 2.000 / 7 días. Pro: ARS 6.000 / 30 días. Anual: ARS 60.000 / 365 días.

@@ -88,10 +88,10 @@ details summary{cursor:pointer;font-weight:bold}
   <div id="welcomeBgA" class="welcome-bg active"></div><div id="welcomeBgB" class="welcome-bg"></div><div class="welcome-shade"></div>
   <div class="welcome-panel">
     <div class="welcome-brand" aria-label="Moracol"><span class="welcome-mark" aria-hidden="true">M</span><span class="welcome-wordmark">MORACOL</span></div>
-    <p>Medí y guardá tus conservas caseras con mayor precisión.</p>
+    <p>Probá Moracol en la exposición: mediciones gratis e ilimitadas, también como invitado.</p>
     <div class="welcome-actions">
       <button id="welcomeCreate" class="create">Crear cuenta</button>
-      <div class="welcome-pair"><button id="welcomeLogin" class="login">Iniciar sesión</button><button id="welcomeGuest" class="guest">Invitado</button></div>
+      <div class="welcome-pair"><button id="welcomeLogin" class="login">Iniciar sesión</button><button id="welcomeGuest" class="guest">Probar sin cuenta</button></div>
       <button id="welcomeGoogle" class="google">G&nbsp;&nbsp; Iniciar con Google</button>
     </div>
     <small class="welcome-note">Proyecto escolar desarrollado en Junior Achievement.</small>
@@ -144,19 +144,19 @@ details summary{cursor:pointer;font-weight:bold}
 </section>
 
 <section id="planes" class="card app-view plans-view">
-  <div class="account-summary"><h2 style="margin:0">Elegí tu plan</h2><span id="paymentsBadge" class="soon-badge">Pago único</span></div>
-  <p class="note">La cuenta gratuita incluye 1 medición. Los planes se pagan una sola vez, sin renovación ni débito automático. Al vencer, deberás volver a pagar para seguir midiendo.</p>
-  <div class="plans" style="margin-top:14px">
+  <div class="account-summary"><h2 style="margin:0">Mediciones gratis durante la exposición</h2><span id="paymentsBadge" class="soon-badge">Acceso gratuito</span></div>
+  <p class="note">Todos pueden medir gratis y sin límites durante esta etapa, incluso como invitados. No se consume la prueba gratuita. Los planes de pago están pendientes.</p>
+  <div class="plans" style="display:none;margin-top:14px">
     <article class="plan"><span class="soon-badge">Pago único</span><h3>Plus</h3><div class="price">$2.000</div><div class="period">ARS · pago único · 7 días</div><ul><li>Mediciones ilimitadas</li><li>Historial en la nube</li><li>Acceso por 7 días</li></ul><button data-plan="plus" disabled>Cobros no habilitados</button></article>
     <article class="plan featured"><span class="soon-badge">Recomendado</span><h3>Pro</h3><div class="price">$6.000</div><div class="period">ARS · pago único · 30 días</div><ul><li>Mediciones ilimitadas</li><li>Historial en la nube</li><li>Acceso por 30 días</li></ul><button data-plan="pro" disabled>Cobros no habilitados</button></article>
     <article class="plan"><span class="soon-badge">Pago único</span><h3>Anual</h3><div class="price">$60.000</div><div class="period">ARS · pago único · 365 días</div><ul><li>Mediciones ilimitadas</li><li>Historial en la nube</li><li>Acceso por 365 días</li></ul><button data-plan="annual" disabled>Cobros no habilitados</button></article>
   </div>
   <button id="refreshPayment" type="button" hidden style="margin-top:13px">Actualizar estado del pago</button>
-  <div id="paymentMessage" class="notice" style="margin-top:13px">Los cobros todavía no están habilitados. Se activarán después de configurar y probar Mercado Pago.</div>
+  <div id="paymentMessage" class="notice" style="margin-top:13px">No necesitás contratar un plan para probar Moracol. Creá una cuenta solo si querés guardar tus resultados en la nube.</div>
 </section>
 
 <section id="medir" class="card app-view measure-view">
-  <div class="account-summary"><h2 style="margin:0">Evaluar una conserva</h2><span id="measurementAllowance" class="pill warning">Iniciá sesión</span></div>
+  <div class="account-summary"><h2 style="margin:0">Evaluar una conserva</h2><span id="measurementAllowance" class="pill active">Mediciones gratis e ilimitadas</span></div>
 <label for="conserva">Tipo de conserva</label>
 <input id="conserva" type="text" value="Dulce de batata" placeholder="Escribe el tipo de conserva">
 <p class="note">Usá la misma iluminación para ambas capturas y evitá reflejos. La comparación de color no certifica que una conserva sea segura para consumir.</p>
@@ -214,6 +214,7 @@ details summary{cursor:pointer;font-weight:bold}
 <canvas id="canvas" hidden></canvas>
 
 <script type="module">
+import {EXHIBITION_MODE} from './moracol-assets/exhibition.js';
 import {METHOD,analyzeRGB,evaluateSample,outcomeLabel} from './moracol-assets/measurement.js';
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js';
 import {
@@ -362,6 +363,7 @@ function activePlan(){
     ? currentUser.subscription : null;
 }
 function accessState(){
+  if(EXHIBITION_MODE)return {allowed:true,unlimited:true,message:'Exposición: mediciones gratis e ilimitadas'};
   if(!currentUser)return {allowed:false,message:'Iniciá sesión para medir'};
   const subscription=activePlan();
   if(subscription)return {allowed:true,unlimited:true,message:`Plan ${subscription.planName} activo hasta ${formatDate(subscription.endsAt)}`};
@@ -382,13 +384,16 @@ function renderAccount(){
   const auth=document.getElementById('authForm');
   if(!currentUser){
     name.textContent=guestMode?'Estás navegando como invitado':'Crea tu cuenta para comenzar';
-    detail.textContent=guestMode?'Podés explorar Moracol. Creá una cuenta para medir y guardar tus resultados.':'Tu historial se guardará vinculado a tu cuenta.';
+    detail.textContent=EXHIBITION_MODE?'Podés medir gratis y sin límites. Para guardar el historial en la nube, creá una cuenta.':guestMode?'Podés explorar Moracol. Creá una cuenta para medir y guardar tus resultados.':'Tu historial se guardará vinculado a tu cuenta.';
     pill.textContent=guestMode?'Modo invitado':'Sin cuenta'; pill.className='pill';
     actions.innerHTML='<button id="showAuth">Crear cuenta o ingresar</button>'; auth.classList.remove('show');
   }else{
     const subscription=activePlan();
     name.textContent=`Hola, ${currentUser.name}`;
-    if(subscription){
+    if(EXHIBITION_MODE){
+      detail.textContent='Mediciones gratis e ilimitadas durante la exposición. Tu prueba gratuita se conserva y podés guardar resultados en la nube.';
+      pill.textContent='Acceso gratuito'; pill.className='pill active';
+    }else if(subscription){
       detail.textContent=`Plan ${subscription.planName} · acceso ilimitado hasta ${formatDate(subscription.endsAt)}${subscription.cancelled?' · cancelado, sin próximos cobros':''}`;
       pill.textContent=`Plan ${subscription.planName} activo`; pill.className='pill active';
     }else if(currentUser.hasHadSubscription){
@@ -432,7 +437,7 @@ async function register(){
     await updateProfile(credential.user,{displayName:name});
     currentUser=userFromFirebase(credential.user,name);
     guestMode=false;renderAccount();await syncAccount();
-    showToast('Cuenta creada. Tenés 1 medición gratuita para probar Moracol.','success');
+    showToast(EXHIBITION_MODE?'Cuenta creada. Podés medir gratis y sin límites.':'Cuenta creada. Tenés 1 medición gratuita para probar Moracol.','success');
   }catch(error){showToast(friendlyAuthError(error),'error');}
   finally{setButtonBusy(button,false);}
 }
@@ -457,11 +462,12 @@ async function signOut(){
 }
 function updatePaymentButtons(){
   document.querySelectorAll('[data-plan]').forEach(button=>{
-    button.disabled=!billingConfig.enabled||checkoutBusy;
-    button.textContent=checkoutBusy?'Preparando pago…':billingConfig.enabled?(billingConfig.mode==='test'?'Probar pago':'Pagar con Mercado Pago'):'Cobros no habilitados';
+    button.disabled=EXHIBITION_MODE||!billingConfig.enabled||checkoutBusy;
+    button.textContent=EXHIBITION_MODE?'Gratis durante la exposición':checkoutBusy?'Preparando pago…':billingConfig.enabled?(billingConfig.mode==='test'?'Probar pago':'Pagar con Mercado Pago'):'Cobros no habilitados';
   });
 }
 async function loadPaymentConfig(){
+  if(EXHIBITION_MODE){billingConfig={enabled:false,mode:'test'};updatePaymentButtons();return;}
   try{
     const response=await fetch('/api/payments/config',{cache:'no-store'});
     if(!response.ok)throw new Error();
@@ -477,7 +483,7 @@ async function loadPaymentConfig(){
   }
 }
 async function choosePlan(planId){
-  if(checkoutBusy||!billingConfig.enabled||!plans[planId])return;
+  if(EXHIBITION_MODE||checkoutBusy||!billingConfig.enabled||!plans[planId])return;
   if(!currentUser){showToast('Primero creá una cuenta o iniciá sesión para elegir un plan.','error');openAuth();return;}
   if(activePlan()){showToast('Tu plan todavía está activo. Podrás renovarlo cuando venza.','info');return;}
   selectedPlan=plans[planId];
@@ -639,8 +645,8 @@ async function captureMeasurement(){
   try{
     const capture=captureColorData();
     if(!referenceMeasurement){
-      // Una evaluación (dos fotos) consume una sola medición disponible.
-      const remoteAccess=await apiRequest('access/consume',{method:'POST'});
+      // En exposición no se exige cuenta ni se consumen créditos.
+      const remoteAccess=EXHIBITION_MODE?{allowed:true,unlimited:true}:await apiRequest('access/consume',{method:'POST'});
       if(version!==measurementVersion||userId!==currentUser?.id)return;
       if(!remoteAccess.allowed)throw new Error('No tenés mediciones disponibles.');
       referenceMeasurement=capture;
@@ -678,7 +684,7 @@ async function captureMeasurement(){
 
 async function saveMeasurement(){
   if(!pendingMeasurement)return;
-  if(!currentUser||pendingMeasurement.userId!==currentUser.id){showToast('Iniciá sesión con la cuenta que realizó la medición.','error');return;}
+  if(!currentUser||pendingMeasurement.userId!==currentUser.id){showToast('Como invitado podés medir sin límites. Para guardar en la nube, iniciá sesión y realizá una nueva medición.','error');return;}
   const button=document.getElementById('save');
   try{
     setButtonBusy(button,true,'Guardando…');
