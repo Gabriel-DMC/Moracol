@@ -69,9 +69,9 @@ const video=element('video');Object.assign(video,{videoWidth:1280,videoHeight:72
 const canvas=element('canvas');let captureRGB=ref.rgb,unusable=false;
 canvas.getContext=()=>({drawImage(){},getImageData(){const data=new Uint8ClampedArray(160*160*4);for(let i=0;i<data.length;i+=4){data.set(unusable?[0,0,0,255]:[...captureRGB.map(Math.round),255],i);}return {data};}});
 let consumes=0,delay=null;
-const context=vm.createContext({EXHIBITION_MODE:false,...measurement,console,crypto,Date,Number,Object,Array,String,Math,JSON,Error,Uint8ClampedArray,
+const context=vm.createContext({createCameraController:()=>({isReady:()=>true,start(){},stop(){}}),EXHIBITION_MODE:false,...measurement,console,crypto,Date,Number,Object,Array,String,Math,JSON,Error,Uint8ClampedArray,
   document:{getElementById:element,querySelector:()=>element('guide'),querySelectorAll:()=>[],body:{classList:{add(){},remove(){}}},documentElement:{dataset:{},setAttribute(){}},addEventListener(){}},
-  window:{location:{search:'',href:'https://test.example/'},matchMedia:()=>({matches:false,addEventListener(){}}),setInterval(){},setTimeout(){},scrollTo(){}},URL,URLSearchParams,
+  window:{addEventListener(){},location:{search:'',href:'https://test.example/'},matchMedia:()=>({matches:false,addEventListener(){}}),setInterval(){},setTimeout(){},scrollTo(){}},URL,URLSearchParams,
   localStorage:{getItem(){return null;},setItem(){}},navigator:{mediaDevices:{async getUserMedia(){return {getTracks(){return [];}};}}},
   initializeApp(){return {};},getAuth(){return {currentUser:{getIdToken:async()=> 'mock'}};},GoogleAuthProvider:class {},onAuthStateChanged(){},
   fetch:async url=>{if(url==='/api/access/consume'){consumes++;if(delay)await delay;return {ok:true,json:async()=>({allowed:true,freeConsumed:true})};}return {ok:true,json:async()=>({})};}});
@@ -138,3 +138,4 @@ context.testUI.setBilling({enabled:true,mode:'live'});
 await context.testUI.choosePlan('pro');
 check(checkoutCalls===1,'Exposición bloquea checkout incluso con configuración habilitada');
 console.log(`${checks} verificaciones correctas: límites, conversiones, API e interfaz.`);
+

@@ -165,13 +165,17 @@ details summary{cursor:pointer;font-weight:bold}
 <section class="card app-view measure-view">
 <h2>Capturar imágenes</h2>
 <div class="camera">
-<video id="video" autoplay playsinline></video>
+<video id="video" autoplay muted playsinline></video>
 <div class="guide" data-label="Colocá el indicador aquí"></div>
 </div>
 <div class="controls">
-<button id="capture">Capturar indicador</button>
+<button id="startCamera" type="button">Activar cámara</button>
+<button id="stopCamera" type="button" class="secondary" hidden>Apagar cámara</button>
+<button id="capture" disabled>Capturar indicador</button>
 </div>
-<p id="status" class="status">Solicitando acceso a la cámara…</p>
+<p id="cameraStatus" class="status" role="status" aria-live="polite">Pulsá Activar cámara y permití el acceso cuando tu navegador lo solicite.</p>
+<p class="note">Solo usamos la cámara, no el micrófono. Las fotos se analizan en este dispositivo y no se suben a la nube. Si el permiso está bloqueado, habilitá Cámara en los permisos del sitio y en los ajustes de tu dispositivo.</p>
+<p id="status" class="status" role="status" aria-live="polite"></p>
 </section>
 
 <section id="result" class="card result app-view measure-view">
@@ -214,6 +218,7 @@ details summary{cursor:pointer;font-weight:bold}
 <canvas id="canvas" hidden></canvas>
 
 <script type="module">
+import {createCameraController} from './moracol-assets/camera.js';
 import {EXHIBITION_MODE} from './moracol-assets/exhibition.js';
 import {METHOD,analyzeRGB,evaluateSample,outcomeLabel} from './moracol-assets/measurement.js';
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js';
@@ -243,7 +248,6 @@ const statusEl=document.getElementById('status');
 const resultEl=document.getElementById('result');
 const verdictEl=document.getElementById('verdict');
 const conservaSelect=document.getElementById('conserva');
-let stream=null;
 let pendingMeasurement=null;
 let referenceMeasurement=null;
 let referenceContext=null;
@@ -560,24 +564,21 @@ function enterAsGuest(){
   currentUser=null;guestMode=true;resetMeasurement();closeWelcome();renderAccount();renderHistory();setView('measure');
 }
 
-async function startCamera(){
-  if(stream) stream.getTracks().forEach(t=>t.stop());
-  try{
-    stream=await navigator.mediaDevices.getUserMedia({
-      video:{
-        facingMode:{ideal:'environment'},
-        width:{ideal:1280},
-        height:{ideal:720}
-      },
-      audio:false
-    });
-    video.srcObject=stream;
-    statusEl.textContent='Cámara lista.';
-  }catch(error){
-    console.error(error);
-    statusEl.textContent='No se pudo acceder a la cámara. Permite el acceso y asegúrate de usar HTTPS.';
+const camera=createCameraController({video,mediaDevices:navigator.mediaDevices,
+  secureContext:window.isSecureContext,
+  onState(state,message){
+    document.getElementById('cameraStatus').textContent=message;
+    const start=document.getElementById('startCamera');
+    start.hidden=state==='ready';start.disabled=state==='requesting';
+    start.textContent=state==='requesting'?'Esperando cámara…':state==='error'?'Reintentar cámara':'Activar cámara';
+    const stop=document.getElementById('stopCamera');
+    stop.hidden=state!=='ready'&&state!=='requesting';
+    stop.textContent=state==='requesting'?'Cancelar solicitud':'Apagar cámara';
+    document.getElementById('capture').disabled=state!=='ready'||measurementBusy;
+    // No mezclar fotos tomadas antes y después de una interrupción.
+    if(state==='idle'||state==='error')resetMeasurement();
   }
-}
+});
 
 function median(values){
   values.sort((a,b)=>a-b);
@@ -602,6 +603,7 @@ function representativeColor(imageData){
 }
 
 function syncCaptureUI(){
+  document.getElementById('capture').disabled=!camera.isReady()||measurementBusy;
   document.getElementById('capture').textContent=referenceMeasurement?'Capturar muestra':'Capturar indicador';
   document.querySelector('.guide').dataset.label=referenceMeasurement?'Colocá la muestra aquí':'Colocá el indicador aquí';
   conservaSelect.disabled=Boolean(referenceMeasurement)||measurementBusy;
@@ -635,7 +637,7 @@ async function captureMeasurement(){
     const access=accessState();
     if(!access.allowed){showToast(access.message,'error');setView(currentUser?'plans':'account');return;}
   }
-  if(!video.videoWidth||video.readyState<2){showToast('La cámara todavía no está lista.','error');return;}
+  if(!camera.isReady()){showToast('Activá la cámara y permití el acceso antes de capturar.','error');return;}
   const conserva=conservaSelect.value.trim();
   if(!conserva||conserva.length>100){showToast('Escribí un nombre de conserva de hasta 100 caracteres.','error');return;}
   const version=measurementVersion,userId=currentUser?.id;
@@ -739,6 +741,9 @@ function escapeHTML(value){
 }
 
 document.getElementById('capture').addEventListener('click',captureMeasurement);
+document.getElementById('startCamera').addEventListener('click',()=>camera.start());
+document.getElementById('stopCamera').addEventListener('click',()=>camera.stop());
+window.addEventListener('pagehide',()=>camera.stop());
 document.getElementById('save').addEventListener('click',saveMeasurement);
 document.getElementById('clearHistory').addEventListener('click',async()=>{
   if(!currentUser)return;
@@ -785,7 +790,7 @@ startWelcomeSlideshow();
 renderAccount();
 renderHistory();
 setView('measure');
-startCamera();
 </script>
 </body>
 </html>
+
