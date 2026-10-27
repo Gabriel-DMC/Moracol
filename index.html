@@ -91,7 +91,7 @@ details summary{cursor:pointer;font-weight:bold}
     <p>Probá Moracol en la exposición: mediciones gratis e ilimitadas, también como invitado.</p>
     <div class="welcome-actions">
       <button id="welcomeCreate" class="create">Crear cuenta</button>
-      <div class="welcome-pair"><button id="welcomeLogin" class="login">Iniciar sesión</button><button id="welcomeGuest" class="guest">Probar sin cuenta</button></div>
+      <div class="welcome-pair"><button id="welcomeLogin" class="login">Iniciar sesión</button><button id="welcomeGuest" class="guest">Invitado</button></div>
       <button id="welcomeGoogle" class="google">G&nbsp;&nbsp; Iniciar con Google</button>
     </div>
     <small class="welcome-note">Proyecto escolar desarrollado en Junior Achievement.</small>
@@ -144,15 +144,15 @@ details summary{cursor:pointer;font-weight:bold}
 </section>
 
 <section id="planes" class="card app-view plans-view">
-  <div class="account-summary"><h2 style="margin:0">Mediciones gratis durante la exposición</h2><span id="paymentsBadge" class="soon-badge">Acceso gratuito</span></div>
-  <p class="note">Todos pueden medir gratis y sin límites durante esta etapa, incluso como invitados. No se consume la prueba gratuita. Los planes de pago están pendientes.</p>
-  <div class="plans" style="display:none;margin-top:14px">
+  <div class="account-summary"><h2 style="margin:0">Elegí tu plan</h2><span id="paymentsBadge" class="soon-badge">Pago único</span></div>
+  <p class="note">Conocé los planes Plus, Pro y Anual. Los cobros todavía no están habilitados.</p>
+  <div class="plans" style="margin-top:14px">
     <article class="plan"><span class="soon-badge">Pago único</span><h3>Plus</h3><div class="price">$2.000</div><div class="period">ARS · pago único · 7 días</div><ul><li>Mediciones ilimitadas</li><li>Historial en la nube</li><li>Acceso por 7 días</li></ul><button data-plan="plus" disabled>Cobros no habilitados</button></article>
     <article class="plan featured"><span class="soon-badge">Recomendado</span><h3>Pro</h3><div class="price">$6.000</div><div class="period">ARS · pago único · 30 días</div><ul><li>Mediciones ilimitadas</li><li>Historial en la nube</li><li>Acceso por 30 días</li></ul><button data-plan="pro" disabled>Cobros no habilitados</button></article>
     <article class="plan"><span class="soon-badge">Pago único</span><h3>Anual</h3><div class="price">$60.000</div><div class="period">ARS · pago único · 365 días</div><ul><li>Mediciones ilimitadas</li><li>Historial en la nube</li><li>Acceso por 365 días</li></ul><button data-plan="annual" disabled>Cobros no habilitados</button></article>
   </div>
   <button id="refreshPayment" type="button" hidden style="margin-top:13px">Actualizar estado del pago</button>
-  <div id="paymentMessage" class="notice" style="margin-top:13px">No necesitás contratar un plan para probar Moracol. Creá una cuenta solo si querés guardar tus resultados en la nube.</div>
+  <div id="paymentMessage" class="notice" style="margin-top:13px">Los cobros todavía no están habilitados. Se activarán después de configurar y probar Mercado Pago.</div>
 </section>
 
 <section id="medir" class="card app-view measure-view">
@@ -463,7 +463,7 @@ async function signOut(){
 function updatePaymentButtons(){
   document.querySelectorAll('[data-plan]').forEach(button=>{
     button.disabled=EXHIBITION_MODE||!billingConfig.enabled||checkoutBusy;
-    button.textContent=EXHIBITION_MODE?'Gratis durante la exposición':checkoutBusy?'Preparando pago…':billingConfig.enabled?(billingConfig.mode==='test'?'Probar pago':'Pagar con Mercado Pago'):'Cobros no habilitados';
+    button.textContent=EXHIBITION_MODE?'Cobros no habilitados':checkoutBusy?'Preparando pago…':billingConfig.enabled?(billingConfig.mode==='test'?'Probar pago':'Pagar con Mercado Pago'):'Cobros no habilitados';
   });
 }
 async function loadPaymentConfig(){
